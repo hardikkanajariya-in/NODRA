@@ -6,8 +6,14 @@ function inlineToPm(spans: InlineSpan[]): PMNode[] {
   const out: PMNode[] = [];
   for (const span of spans) {
     switch (span.type) {
-      case "text":
-        if (span.text) out.push({ type: "text", text: span.text });
+      case "text": {
+        if (!span.text) break;
+        const node: PMNode = { type: "text", text: span.text };
+        if (span.strike) node.marks = [{ type: "strike" }];
+        out.push(node);
+        break;
+      }
+      case "image":
         break;
       case "pageRef":
         out.push({

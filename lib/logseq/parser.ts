@@ -1,12 +1,16 @@
 import type { BlockForest, BlockNode } from "./types";
-import { parseInline } from "./inline-parser";
+import { parseBulletContent } from "./bullet-content";
 
-const BULLET = /^(\s*)-\s+(.*)$/;
+const BULLET = /^([\t ]*)-\s+(.*)$/;
 const PROPERTY = /^(\s*)([^:\s]+)::\s*(.+)$/;
 
 function indentDepth(indent: string): number {
-  const expanded = indent.replace(/\t/g, "  ");
-  return Math.floor(expanded.length / 2);
+  let depth = 0;
+  for (const ch of indent) {
+    if (ch === "\t") depth += 1;
+    else if (ch === " ") depth += 0.5;
+  }
+  return Math.floor(depth);
 }
 
 export function parseLogseqMarkdown(input: string): BlockForest {
@@ -29,19 +33,23 @@ export function parseLogseqMarkdown(input: string): BlockForest {
 
     const bulletMatch = line.match(BULLET);
     if (!bulletMatch) {
+      const para = parseBulletContent(line.trim());
       forest.push({
         type: "paragraph",
-        inlines: parseInline(line.trim()),
+        inlines: para.inlines,
       });
       continue;
     }
 
     const depth = indentDepth(bulletMatch[1]);
+    const parsed = parseBulletContent(bulletMatch[2]);
     const node: BlockNode = {
       type: "bullet",
       depth,
-      inlines: parseInline(bulletMatch[2]),
+      inlines: parsed.inlines,
       children: [],
+      done: parsed.done,
+      imageHint: parsed.imageHint,
     };
 
     while (stack.length > 0 && stack[stack.length - 1].depth >= depth) {

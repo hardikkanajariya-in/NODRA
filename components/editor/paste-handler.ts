@@ -1,7 +1,7 @@
 import type { Editor } from "@tiptap/react";
-import { blockForestToTiptap } from "@/lib/logseq/to-tiptap";
-import { parseLogseqMarkdown } from "@/lib/logseq/parser";
-import { htmlToLogseqForest } from "@/lib/logseq/html-to-blocks";
+import { buildImagePool } from "@/lib/logseq/clipboard-images";
+import { pasteClipboardToTiptap } from "@/lib/logseq/paste-to-tiptap";
+import { uploadAssetFile } from "@/lib/assets/upload-client";
 
 export type UploadHandlers = {
   onUploadStart?: () => void;
@@ -17,32 +17,56 @@ export function handleLogseqPaste(
   const clipboard = event.clipboardData;
   if (!clipboard) return false;
 
-  const files = [...clipboard.files];
-  const imageFile = files.find((f) => f.type.startsWith("image/"));
-  if (imageFile) {
-    event.preventDefault();
-    void uploadAndInsertImage(editor, imageFile, pageId, upload);
-    return true;
-  }
-
   const html = clipboard.getData("text/html");
-  if (html?.trim()) {
-    event.preventDefault();
-    const forest = htmlToLogseqForest(html);
-    const doc = blockForestToTiptap(forest);
-    editor.commands.insertContent(doc.content ?? []);
-    return true;
-  }
-
   const text = clipboard.getData("text/plain");
-  if (text?.includes("\n- ") || text?.trim().startsWith("- ")) {
-    event.preventDefault();
-    const doc = blockForestToTiptap(parseLogseqMarkdown(text));
-    editor.commands.insertContent(doc.content ?? []);
-    return true;
+  const hasImageFile = [...clipboard.items].some(
+    (i) => i.kind === "file" && i.type.startsWith("image/"),
+  );
+  const looksLogseq =
+    Boolean(html?.trim()) ||
+    text?.includes("\n- ") ||
+    text?.trim().startsWith("- ") ||
+    text?.includes("\n\t-") ||
+    text?.includes("~~");
+
+  if (!looksLogseq && !hasImageFile) return false;
+
+  event.preventDefault();
+  void processPaste(editor, clipboard, pageId, upload);
+  return true;
+}
+
+async function processPaste(
+  editor: Editor,
+  clipboard: DataTransfer,
+  pageId: string,
+  upload?: UploadHandlers,
+) {
+  const pool = await buildImagePool(clipboard);
+
+  if (
+    pool.ordered.length === 0 &&
+    !clipboard.getData("text/html") &&
+    !clipboard.getData("text/plain").includes("-")
+  ) {
+    const file = [...clipboard.files].find((f) => f.type.startsWith("image/"));
+    if (file) {
+      await uploadAndInsertImage(editor, file, pageId, upload);
+      return;
+    }
   }
 
-  return false;
+  try {
+    const doc = await pasteClipboardToTiptap(
+      clipboard,
+      pageId,
+      pool,
+      upload,
+    );
+    editor.chain().focus().insertContent(doc.content ?? []).run();
+  } catch {
+    editor.chain().focus().insertContent({ type: "paragraph" }).run();
+  }
 }
 
 export async function uploadFileToEditor(
@@ -61,18 +85,16 @@ async function uploadAndInsertImage(
   upload?: UploadHandlers,
 ) {
   upload?.onUploadStart?.();
-
-  const form = new FormData();
-  form.append("file", file);
-  form.append("pageId", pageId);
-
   try {
-    const res = await fetch("/api/assets", { method: "POST", body: form });
-    if (!res.ok) {
-      editor.chain().focus().insertContent(`![${file.name}](file://local)`).run();
+    const data = await uploadAssetFile(file, pageId);
+    if (!data) {
+      editor
+        .chain()
+        .focus()
+        .insertContent(`![${file.name}](file://local)`)
+        .run();
       return;
     }
-    const data = (await res.json()) as { id: string; url: string };
     editor
       .chain()
       .focus()
@@ -82,7 +104,11 @@ async function uploadAndInsertImage(
       })
       .run();
   } catch {
-    editor.chain().focus().insertContent(`![${file.name}](file://local)`).run();
+    editor
+      .chain()
+      .focus()
+      .insertContent(`![${file.name}](file://local)`)
+      .run();
   } finally {
     upload?.onUploadEnd?.();
   }
