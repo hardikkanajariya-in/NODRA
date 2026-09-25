@@ -22,6 +22,15 @@ export const AssetImage = Image.extend({
       caption: {
         default: null,
       },
+      uploading: {
+        default: false,
+      },
+      uploadId: {
+        default: null,
+      },
+      uploadFailed: {
+        default: false,
+      },
     };
   },
 

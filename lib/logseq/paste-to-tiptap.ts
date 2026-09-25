@@ -7,99 +7,143 @@ import {
   takeNextPoolImage,
 } from "./clipboard-images";
 import { normalizePastedForest } from "./forest-normalize";
-import { uploadAssetFile } from "@/lib/assets/upload-client";
+import { parseLogseqDbClipboard } from "./db-clipboard";
 
 type PMNode = Record<string, unknown>;
 
-export type PasteUploadHooks = {
-  onUploadStart?: () => void;
-  onUploadEnd?: () => void;
+export type PendingAssetUpload = {
+  uploadId: string;
+  file: File;
+  previewUrl: string;
 };
 
-export async function pasteClipboardToTiptap(
+export type PreparedPaste = {
+  content: PMNode[];
+  jobs: PendingAssetUpload[];
+};
+
+export function readClipboardStrings(clipboard: DataTransfer): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const types = new Set(clipboard.types);
+  types.add("text/plain");
+  types.add("text/html");
+  for (const type of types) {
+    if (type.startsWith("image/")) continue;
+    let data = "";
+    try {
+      data = clipboard.getData(type);
+    } catch {
+      continue;
+    }
+    if (!data || seen.has(data)) continue;
+    seen.add(data);
+    out.push(data);
+  }
+  return out;
+}
+
+export async function prepareLogseqPaste(
   clipboard: DataTransfer,
-  pageId: string,
   pool: ImagePool,
-  upload?: PasteUploadHooks,
-): Promise<PMNode> {
+): Promise<PreparedPaste> {
+  const strings = readClipboardStrings(clipboard);
   const html = clipboard.getData("text/html");
   const text = clipboard.getData("text/plain");
+  const edn = strings.find((s) => s.includes(":pages-and-blocks"));
 
-  let forest: BlockForest;
+  let forest: BlockForest | null = null;
   let htmlImageSrcs: string[] = [];
 
-  if (html?.trim()) {
+  if (edn) {
+    forest = parseLogseqDbClipboard(edn);
+  }
+  if ((!forest || forest.length === 0) && html?.trim()) {
     const parsed = parseLogseqHtml(html);
     forest = parsed.forest;
     htmlImageSrcs = parsed.htmlImageSrcs;
-  } else if (text?.includes("\n- ") || text?.trim().startsWith("- ")) {
+  }
+  if ((!forest || forest.length === 0) && looksLikeMarkdown(text)) {
     forest = parseLogseqMarkdown(text);
-  } else {
-    return { type: "doc", content: [{ type: "paragraph" }] };
+  }
+  if (!forest || forest.length === 0) {
+    return { content: [{ type: "paragraph" }], jobs: [] };
   }
 
   forest = normalizePastedForest(forest);
 
+  const jobs: PendingAssetUpload[] = [];
   let imageIndex = 0;
   let htmlSrcIndex = 0;
   const usedFiles = new Set<string>();
+
   const resolveImage = async (
     hint: string,
     url?: string,
+    displayWidth?: number,
   ): Promise<PMNode | null> => {
-    upload?.onUploadStart?.();
-    try {
-      let file = findImageForHint(pool, hint);
-      if (file && usedFiles.has(file.name)) {
-        file =
-          pool.ordered.find((f) => !usedFiles.has(f.name)) ?? file;
-      }
-      if (!file && url?.startsWith("data:")) {
-        const res = await fetch(url);
-        const blob = await res.blob();
-        file = new File([blob], hint || `image-${imageIndex}.png`, {
-          type: blob.type,
-        });
-      }
-      if (!file && pool.ordered[imageIndex]) {
-        file = pool.ordered[imageIndex];
-        imageIndex++;
-      }
-      if (!file && htmlImageSrcs[htmlSrcIndex]) {
-        const src = htmlImageSrcs[htmlSrcIndex];
-        htmlSrcIndex++;
-        file = await fileFromImageSrc(src, hint || `image-${htmlSrcIndex}.png`);
-      }
-      if (!file) {
-        file = takeNextPoolImage(pool, usedFiles);
-      }
-      if (!file) return null;
-      usedFiles.add(file.name);
-
-      const uploaded = await uploadAssetFile(file, pageId);
-      if (!uploaded) return null;
-      return {
-        type: "image",
-        attrs: {
-          src: uploaded.url,
-          alt: hint,
-          assetId: uploaded.id,
-          align: "left",
-          caption: LOGSEQ_ASSET.test(hint) ? hint : null,
-        },
-      };
-    } finally {
-      upload?.onUploadEnd?.();
+    let file = findImageForHint(pool, hint);
+    if (!file) file = findImageForHint(pool, `${hint}.png`);
+    if (file && usedFiles.has(file.name)) {
+      file = pool.ordered.find((f) => !usedFiles.has(f.name));
     }
+    if (!file && url?.startsWith("data:")) {
+      file =
+        (await fileFromImageSrc(url, `${hint || "image"}.png`)) ?? undefined;
+    }
+    if (!file && pool.ordered[imageIndex] && !usedFiles.has(pool.ordered[imageIndex].name)) {
+      file = pool.ordered[imageIndex];
+      imageIndex++;
+    }
+    if (!file && htmlImageSrcs[htmlSrcIndex]) {
+      const src = htmlImageSrcs[htmlSrcIndex];
+      htmlSrcIndex++;
+      file =
+        (await fileFromImageSrc(src, `${hint || "image"}.png`)) ?? undefined;
+    }
+    if (!file) file = takeNextPoolImage(pool, usedFiles);
+    if (!file) return null;
+
+    usedFiles.add(file.name);
+    const uploadId = crypto.randomUUID();
+    const previewUrl = URL.createObjectURL(file);
+    jobs.push({ uploadId, file, previewUrl });
+
+    return {
+      type: "image",
+      attrs: {
+        src: previewUrl,
+        alt: hint,
+        align: "left",
+        width: displayWidth ?? null,
+        caption: LOGSEQ_ASSET.test(hint) ? hint : null,
+        uploading: true,
+        uploadId,
+      },
+    };
   };
 
   const content = await forestToPm(forest, resolveImage);
-  return { type: "doc", content };
+  return { content, jobs };
+}
+
+function looksLikeMarkdown(text: string): boolean {
+  if (!text) return false;
+  return (
+    text.includes("\n- ") ||
+    text.trim().startsWith("- ") ||
+    text.includes("\n\t-") ||
+    text.includes("~~")
+  );
 }
 
 async function forestToPm(
   forest: BlockForest,
-  resolveImage: (hint: string, url?: string) => Promise<PMNode | null>,
+  resolveImage: (
+    hint: string,
+    url?: string,
+    displayWidth?: number,
+  ) => Promise<PMNode | null>,
 ): Promise<PMNode[]> {
   const content: PMNode[] = [];
   let bulletBatch: BlockNode[] = [];
@@ -136,7 +180,11 @@ async function forestToPm(
 
 async function bulletsToList(
   nodes: BlockNode[],
-  resolveImage: (hint: string, url?: string) => Promise<PMNode | null>,
+  resolveImage: (
+    hint: string,
+    url?: string,
+    displayWidth?: number,
+  ) => Promise<PMNode | null>,
 ): Promise<PMNode | null> {
   const items = nodes.filter((n) => n.type === "bullet");
   if (!items.length) return null;
@@ -165,7 +213,7 @@ async function bulletsToList(
     if (item.imageHint) {
       const imageSpan = item.inlines.find((s) => s.type === "image");
       const url = imageSpan?.type === "image" ? imageSpan.url : undefined;
-      const img = await resolveImage(item.imageHint, url);
+      const img = await resolveImage(item.imageHint, url, item.imageWidth);
       if (img) {
         listItemContent.push(img);
       } else if (!item.inlines.some((s) => s.type === "text" && s.text.trim())) {

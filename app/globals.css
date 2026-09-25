@@ -332,6 +332,48 @@ body {
   }
 }
 
+.nodra-upload-track,
+.nodra-asset-upload-track {
+  display: block;
+  height: 6px;
+  width: 8rem;
+  border-radius: 999px;
+  background: var(--nodra-border);
+  overflow: hidden;
+}
+
+.nodra-upload-fill,
+.nodra-asset-upload-fill {
+  display: block;
+  height: 100%;
+  background: var(--nodra-accent);
+  border-radius: inherit;
+  transition: width 120ms linear;
+}
+
+.nodra-asset-upload {
+  position: absolute;
+  left: 0.5rem;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.92);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.12);
+}
+
+.nodra-asset-upload-track {
+  width: 100%;
+}
+
+.nodra-asset-upload-label {
+  font-size: 0.75rem;
+  color: var(--nodra-fg);
+}
+
 .nodra-status-dot {
   width: 6px;
   height: 6px;

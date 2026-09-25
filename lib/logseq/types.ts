@@ -15,6 +15,8 @@ export type BlockNode =
       children: BlockNode[];
       done?: boolean;
       imageHint?: string;
+      /** Display width from Logseq asset resize metadata. */
+      imageWidth?: number;
     }
   | { type: "paragraph"; inlines: InlineSpan[] };
 

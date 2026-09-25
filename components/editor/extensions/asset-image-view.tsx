@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import {
   AlignCenter,
@@ -9,6 +9,10 @@ import {
   Copy,
   Trash2,
 } from "lucide-react";
+import {
+  readUploadProgress,
+  subscribeUploadProgress,
+} from "@/lib/assets/upload-progress";
 
 type Align = "left" | "center" | "right";
 
@@ -17,17 +21,26 @@ export function AssetImageView({
   updateAttributes,
   selected,
   deleteNode,
-  editor,
 }: NodeViewProps) {
   const align = (node.attrs.align as Align) || "left";
   const width = node.attrs.width as number | null;
   const caption = node.attrs.caption as string | null;
   const src = node.attrs.src as string;
+  const uploading = Boolean(node.attrs.uploading);
+  const uploadFailed = Boolean(node.attrs.uploadFailed);
+  const uploadId = (node.attrs.uploadId as string | null) ?? null;
+  const [progress, setProgress] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [alignOpen, setAlignOpen] = useState(false);
   const resizing = useRef(false);
   const startX = useRef(0);
   const startWidth = useRef(0);
+
+  useEffect(() => {
+    if (!uploading || !uploadId) return;
+    setProgress(readUploadProgress(uploadId));
+    return subscribeUploadProgress(uploadId, setProgress);
+  }, [uploading, uploadId]);
 
   const setAlign = useCallback(
     (value: Align) => {
@@ -143,6 +156,29 @@ export function AssetImageView({
           draggable={false}
           style={width ? { width: "100%" } : undefined}
         />
+        {uploading && (
+          <div className="nodra-asset-upload" aria-live="polite">
+            <div
+              className="nodra-asset-upload-track"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={progress}
+              aria-label="Uploading image"
+            >
+              <div
+                className="nodra-asset-upload-fill"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <span className="nodra-asset-upload-label">
+              Uploading {progress}%
+            </span>
+          </div>
+        )}
+        {uploadFailed && (
+          <div className="nodra-asset-upload-label">Upload failed</div>
+        )}
         <span
           className="nodra-asset-image-handle nodra-asset-image-handle--left"
           onMouseDown={(e) => {

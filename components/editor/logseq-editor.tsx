@@ -29,13 +29,14 @@ export function LogseqEditor({
   variant = "page",
 }: Props) {
   const router = useRouter();
-  const { setSaveStatus, setLastSaved, beginUpload, endUpload } =
+  const { setSaveStatus, setLastSaved, beginUpload, endUpload, setUploadProgress } =
     useAppActivity();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const uploadHandlers = {
     onUploadStart: beginUpload,
     onUploadEnd: endUpload,
+    onUploadProgress: setUploadProgress,
   };
 
   const persist = useCallback(
