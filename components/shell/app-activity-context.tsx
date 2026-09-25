@@ -23,6 +23,8 @@ type Ctx = {
   beginUpload: () => void;
   setUploadProgress: (percent: number) => void;
   endUpload: () => void;
+  activeUsers: number;
+  setActiveUsers: (n: number) => void;
 };
 
 const AppActivityContext = createContext<Ctx | null>(null);
@@ -35,6 +37,7 @@ export function AppActivityProvider({ children }: { children: ReactNode }) {
   const [uploadProgress, setUploadProgressState] = useState<number | null>(
     null,
   );
+  const [activeUsers, setActiveUsers] = useState(0);
 
   const beginUpload = useCallback(() => {
     setUploadCount((c) => c + 1);
@@ -64,6 +67,8 @@ export function AppActivityProvider({ children }: { children: ReactNode }) {
       beginUpload,
       setUploadProgress,
       endUpload,
+      activeUsers,
+      setActiveUsers,
     }),
     [
       saveStatus,
@@ -74,6 +79,7 @@ export function AppActivityProvider({ children }: { children: ReactNode }) {
       beginUpload,
       setUploadProgress,
       endUpload,
+      activeUsers,
     ],
   );
 

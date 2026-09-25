@@ -19,6 +19,10 @@ import { handleLogseqPaste, uploadFileToEditor } from "./paste-handler";
 import { pageSlugFromName } from "@/lib/utils/slug";
 import { useAppActivity } from "@/components/shell/app-activity-context";
 import { EditorFormatContextMenu } from "./editor-format-context-menu";
+import {
+  DOCUMENT_UPDATED_EVENT,
+  type DocumentUpdatedDetail,
+} from "@/lib/realtime/client";
 
 type Props = {
   pageId: string;
@@ -32,15 +36,67 @@ export function LogseqEditor({
   variant = "page",
 }: Props) {
   const router = useRouter();
-  const { setSaveStatus, setLastSaved, beginUpload, endUpload, setUploadProgress } =
-    useAppActivity();
+  const {
+    saveStatus,
+    setSaveStatus,
+    setLastSaved,
+    beginUpload,
+    endUpload,
+    setUploadProgress,
+  } = useAppActivity();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastServerRevisionRef = useRef<string | null>(null);
+  const pendingRemoteRevisionRef = useRef<string | null>(null);
+  const saveStatusRef = useRef(saveStatus);
+  saveStatusRef.current = saveStatus;
 
   const uploadHandlers = {
     onUploadStart: beginUpload,
     onUploadEnd: endUpload,
     onUploadProgress: setUploadProgress,
   };
+
+  const editorRef = useRef<ReturnType<typeof useEditor>>(null);
+
+  const applyRemoteContent = useCallback(async (updatedAt: string) => {
+    if (
+      lastServerRevisionRef.current &&
+      updatedAt <= lastServerRevisionRef.current
+    ) {
+      return;
+    }
+
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+    }
+
+    if (saveStatusRef.current === "saving") {
+      pendingRemoteRevisionRef.current = updatedAt;
+      return;
+    }
+
+    const ed = editorRef.current;
+    if (!ed) return;
+
+    try {
+      const res = await fetch(`/api/documents/${pageId}`);
+      if (!res.ok) return;
+      const doc = (await res.json()) as {
+        contentJson: Record<string, unknown>;
+        updatedAt: string;
+      };
+      if (doc.updatedAt <= (lastServerRevisionRef.current ?? "")) return;
+
+      ed.commands.setContent(normalizeDocToBullets(doc.contentJson), {
+        emitUpdate: false,
+      });
+      lastServerRevisionRef.current = doc.updatedAt;
+      pendingRemoteRevisionRef.current = null;
+    } catch {
+      // ignore transient fetch errors
+    }
+  }, [pageId]);
 
   const persist = useCallback(
     async (json: Record<string, unknown>) => {
@@ -52,8 +108,22 @@ export function LogseqEditor({
           body: JSON.stringify({ contentJson: json }),
         });
         if (res.ok) {
+          const body = (await res.json()) as { updatedAt?: string };
+          if (body.updatedAt) {
+            lastServerRevisionRef.current = body.updatedAt;
+          }
           setSaveStatus("saved");
           setLastSaved(new Date());
+          const pending = pendingRemoteRevisionRef.current;
+          if (
+            pending &&
+            body.updatedAt &&
+            pending > body.updatedAt
+          ) {
+            void applyRemoteContent(pending);
+          } else if (pending === body.updatedAt) {
+            pendingRemoteRevisionRef.current = null;
+          }
         } else {
           setSaveStatus("error");
         }
@@ -61,7 +131,7 @@ export function LogseqEditor({
         setSaveStatus("error");
       }
     },
-    [pageId, setSaveStatus, setLastSaved],
+    [pageId, setSaveStatus, setLastSaved, applyRemoteContent],
   );
 
   const scheduleSave = useCallback(
@@ -71,8 +141,6 @@ export function LogseqEditor({
     },
     [persist],
   );
-
-  const editorRef = useRef<ReturnType<typeof useEditor>>(null);
 
   const documentContent = useMemo(
     () => normalizeDocToBullets(initialContent),
@@ -165,6 +233,17 @@ export function LogseqEditor({
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
   }, []);
+
+  useEffect(() => {
+    const onRemote = (event: Event) => {
+      const detail = (event as CustomEvent<DocumentUpdatedDetail>).detail;
+      if (detail.pageId !== pageId) return;
+      void applyRemoteContent(detail.updatedAt);
+    };
+
+    window.addEventListener(DOCUMENT_UPDATED_EVENT, onRemote);
+    return () => window.removeEventListener(DOCUMENT_UPDATED_EVENT, onRemote);
+  }, [pageId, applyRemoteContent]);
 
   return (
     <div className="nodra-editor-wrap relative">

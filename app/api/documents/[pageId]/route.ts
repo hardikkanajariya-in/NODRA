@@ -31,5 +31,9 @@ export async function PUT(request: Request, { params }: Params) {
   }
 
   const result = await saveDocument(pageId, parsed.data.contentJson);
-  return NextResponse.json({ ok: true, plainText: result.plainText });
+  return NextResponse.json({
+    ok: true,
+    plainText: result.plainText,
+    updatedAt: result.updatedAt.toISOString(),
+  });
 }

@@ -1,9 +1,10 @@
 "use client";
 
-import { Menu, Moon, Sun } from "lucide-react";
+import { Menu, Moon, Sun, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useTheme } from "./theme-provider";
 import { GlobalStatusBar } from "./global-status-bar";
+import { useAppActivity } from "./app-activity-context";
 
 type Props = {
   onMenuClick?: () => void;
@@ -27,6 +28,7 @@ function headerTitle(pathname: string): string {
 
 export function LogseqHeader({ onMenuClick }: Props) {
   const { theme, toggle } = useTheme();
+  const { activeUsers } = useAppActivity();
   const pathname = usePathname();
   const title = headerTitle(pathname);
 
@@ -45,7 +47,16 @@ export function LogseqHeader({ onMenuClick }: Props) {
         {title}
       </div>
 
-      <div className="flex shrink-0 items-center gap-1.5">
+      <div className="flex shrink-0 items-center gap-2">
+        {activeUsers > 0 && (
+          <span
+            className="nodra-active-users flex items-center gap-1 text-xs text-[var(--nodra-muted)]"
+            title="Active sessions on this graph"
+          >
+            <Users size={14} aria-hidden />
+            <span>{activeUsers}</span>
+          </span>
+        )}
         <GlobalStatusBar />
         <button
           type="button"

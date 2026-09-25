@@ -7,6 +7,7 @@ import { AppActivityProvider } from "./app-activity-context";
 import { RouteLoadingBar } from "./route-loading-bar";
 import { ThemeProvider } from "./theme-provider";
 import type { GraphSummary } from "./graph-switcher";
+import { RealtimeSync } from "./realtime-sync";
 
 type Props = {
   pages: SidebarPage[];
@@ -27,6 +28,7 @@ export function LogseqShell({
   return (
     <ThemeProvider>
       <AppActivityProvider>
+        <RealtimeSync graphId={activeGraph.id} />
         <div className="nodra-app flex h-screen overflow-hidden">
           <RouteLoadingBar />
           <LogseqSidebar

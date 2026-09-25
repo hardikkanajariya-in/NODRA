@@ -9,6 +9,10 @@ import {
 } from "@/lib/links/extract";
 import { emptyDoc, ensureDocument } from "@/lib/pages/document";
 import { journalDocumentHasContent } from "@/lib/editor/doc-content";
+import {
+  notifyDocumentUpdated,
+  notifyPagesChanged,
+} from "@/lib/realtime/publish";
 
 export async function listPages(graphId: string) {
   return db.query.pages.findMany({
@@ -56,7 +60,11 @@ export async function createPage(graphId: string, name: string) {
 
   await ensureDocument(page.id);
 
-  return getPageById(page.id);
+  const full = await getPageById(page.id);
+  if (full) {
+    await notifyPagesChanged(graphId);
+  }
+  return full;
 }
 
 export async function getOrCreateJournal(graphId: string, dateStr: string) {
@@ -128,11 +136,18 @@ export async function updatePageName(id: string, name: string) {
     .set({ name, slug, updatedAt: new Date() })
     .where(and(eq(pages.id, id), eq(pages.type, "page")))
     .returning();
+  if (updated) {
+    await notifyPagesChanged(updated.graphId);
+  }
   return updated;
 }
 
 export async function deletePage(id: string) {
+  const page = await getPageById(id);
   await db.delete(pages).where(eq(pages.id, id));
+  if (page) {
+    await notifyPagesChanged(page.graphId);
+  }
 }
 
 export async function saveDocument(
@@ -150,13 +165,15 @@ export async function saveDocument(
     where: eq(documents.pageId, pageId),
   });
 
+  const savedAt = new Date();
+
   if (existing) {
     await db
       .update(documents)
       .set({
         contentJson,
         plainText,
-        updatedAt: new Date(),
+        updatedAt: savedAt,
       })
       .where(eq(documents.pageId, pageId));
   } else {
@@ -164,17 +181,20 @@ export async function saveDocument(
       pageId,
       contentJson,
       plainText,
+      updatedAt: savedAt,
     });
   }
 
   await db
     .update(pages)
-    .set({ updatedAt: new Date() })
+    .set({ updatedAt: savedAt })
     .where(eq(pages.id, pageId));
 
   await syncLinksForPage(page.graphId, pageId, plainText);
 
-  return { plainText };
+  await notifyDocumentUpdated(page.graphId, pageId, savedAt);
+
+  return { plainText, updatedAt: savedAt };
 }
 
 async function syncLinksForPage(
