@@ -276,3 +276,16 @@ body {
 .nodra-graph-journal {
   border-color: var(--nodra-accent);
 }
+
+.nodra-graph-trigger:hover {
+  background: var(--nodra-nav-active);
+}
+
+.nodra-graph-menu {
+  background: var(--nodra-main);
+  border-color: var(--nodra-border);
+}
+
+.nodra-graph-menu-item:hover {
+  background: var(--nodra-nav-active);
+}

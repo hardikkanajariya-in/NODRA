@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getOrCreateJournal } from "@/lib/pages/service";
+import { getActiveGraphId } from "@/lib/graphs/service";
 
 type Params = { params: Promise<{ date: string }> };
 
@@ -10,6 +11,7 @@ export async function GET(_request: Request, { params }: Params) {
     return NextResponse.json({ error: "Invalid date" }, { status: 400 });
   }
 
-  const page = await getOrCreateJournal(date);
+  const graphId = await getActiveGraphId();
+  const page = await getOrCreateJournal(graphId, date);
   return NextResponse.json(page);
 }

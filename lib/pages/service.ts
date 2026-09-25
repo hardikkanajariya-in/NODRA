@@ -9,24 +9,24 @@ import {
 } from "@/lib/links/extract";
 import { emptyDoc, ensureDocument } from "@/lib/pages/document";
 
-export async function listPages() {
+export async function listPages(graphId: string) {
   return db.query.pages.findMany({
-    where: ne(pages.type, "journal"),
+    where: and(eq(pages.graphId, graphId), ne(pages.type, "journal")),
     orderBy: [desc(pages.updatedAt)],
   });
 }
 
-export async function listJournals(limit = 30) {
+export async function listJournals(graphId: string, limit = 30) {
   return db.query.pages.findMany({
-    where: eq(pages.type, "journal"),
+    where: and(eq(pages.graphId, graphId), eq(pages.type, "journal")),
     orderBy: [desc(pages.journalDate)],
     limit,
   });
 }
 
-export async function getPageBySlug(slug: string) {
+export async function getPageBySlug(graphId: string, slug: string) {
   return db.query.pages.findFirst({
-    where: eq(pages.slug, slug),
+    where: and(eq(pages.graphId, graphId), eq(pages.slug, slug)),
     with: { document: true },
   });
 }
@@ -38,14 +38,15 @@ export async function getPageById(id: string) {
   });
 }
 
-export async function createPage(name: string) {
+export async function createPage(graphId: string, name: string) {
   const slug = pageSlugFromName(name);
-  const existing = await getPageBySlug(slug);
+  const existing = await getPageBySlug(graphId, slug);
   if (existing) return existing;
 
   const [page] = await db
     .insert(pages)
     .values({
+      graphId,
       name,
       slug,
       type: "page",
@@ -57,9 +58,9 @@ export async function createPage(name: string) {
   return getPageById(page.id);
 }
 
-export async function getOrCreateJournal(dateStr: string) {
+export async function getOrCreateJournal(graphId: string, dateStr: string) {
   const slug = journalSlugFromDate(dateStr);
-  let page = await getPageBySlug(slug);
+  let page = await getPageBySlug(graphId, slug);
 
   if (!page) {
     const parsed = parseISO(`${dateStr}T12:00:00`);
@@ -68,6 +69,7 @@ export async function getOrCreateJournal(dateStr: string) {
     const [created] = await db
       .insert(pages)
       .values({
+        graphId,
         name,
         slug,
         type: "journal",
@@ -89,7 +91,7 @@ export async function getOrCreateJournal(dateStr: string) {
   return page;
 }
 
-export async function getJournalFeed(dayCount = 14) {
+export async function getJournalFeed(graphId: string, dayCount = 14) {
   const dates: string[] = [];
   const now = new Date();
   for (let i = 0; i < dayCount; i++) {
@@ -98,7 +100,9 @@ export async function getJournalFeed(dayCount = 14) {
     dates.push(format(d, "yyyy-MM-dd"));
   }
 
-  const entries = await Promise.all(dates.map((d) => getOrCreateJournal(d)));
+  const entries = await Promise.all(
+    dates.map((d) => getOrCreateJournal(graphId, d)),
+  );
   return entries;
 }
 
@@ -123,6 +127,9 @@ export async function saveDocument(
   const plainText =
     extractPlainTextFromTiptap(contentJson) ||
     JSON.stringify(contentJson).slice(0, 5000);
+
+  const page = await getPageById(pageId);
+  if (!page) throw new Error("Page not found");
 
   const existing = await db.query.documents.findFirst({
     where: eq(documents.pageId, pageId),
@@ -150,19 +157,23 @@ export async function saveDocument(
     .set({ updatedAt: new Date() })
     .where(eq(pages.id, pageId));
 
-  await syncLinksForPage(pageId, plainText);
+  await syncLinksForPage(page.graphId, pageId, plainText);
 
   return { plainText };
 }
 
-async function syncLinksForPage(sourcePageId: string, plainText: string) {
+async function syncLinksForPage(
+  graphId: string,
+  sourcePageId: string,
+  plainText: string,
+) {
   const names = extractPageNamesFromText(plainText);
   await db.delete(links).where(eq(links.sourcePageId, sourcePageId));
 
   for (const name of names) {
     const slug = pageSlugFromName(name);
     const target = await db.query.pages.findFirst({
-      where: eq(pages.slug, slug),
+      where: and(eq(pages.graphId, graphId), eq(pages.slug, slug)),
     });
     if (!target || target.id === sourcePageId) continue;
 
@@ -177,19 +188,26 @@ async function syncLinksForPage(sourcePageId: string, plainText: string) {
   }
 }
 
-export async function getGraphData() {
-  const allPages = await db.query.pages.findMany();
+export async function getGraphData(graphId: string) {
+  const graphPages = await db.query.pages.findMany({
+    where: eq(pages.graphId, graphId),
+  });
+  const pageIds = new Set(graphPages.map((p) => p.id));
   const allLinks = await db.query.links.findMany();
 
+  const edges = allLinks.filter(
+    (l) => pageIds.has(l.sourcePageId) && pageIds.has(l.targetPageId),
+  );
+
   return {
-    nodes: allPages.map((p) => ({
+    nodes: graphPages.map((p) => ({
       id: p.id,
       label: p.name,
       slug: p.slug,
       type: p.type,
       journalDate: p.journalDate,
     })),
-    edges: allLinks.map((l) => ({
+    edges: edges.map((l) => ({
       id: l.id,
       source: l.sourcePageId,
       target: l.targetPageId,
@@ -197,7 +215,7 @@ export async function getGraphData() {
   };
 }
 
-export async function findPageByName(name: string) {
+export async function findPageByName(graphId: string, name: string) {
   const slug = pageSlugFromName(name);
-  return getPageBySlug(slug);
+  return getPageBySlug(graphId, slug);
 }

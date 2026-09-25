@@ -11,6 +11,7 @@ import {
   Search,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { GraphSwitcher, type GraphSummary } from "./graph-switcher";
 
 export type SidebarPage = {
   id: string;
@@ -20,6 +21,8 @@ export type SidebarPage = {
 
 type Props = {
   pages: SidebarPage[];
+  graphs: GraphSummary[];
+  activeGraph: GraphSummary;
   search: string;
   onSearchChange: (v: string) => void;
   open: boolean;
@@ -29,6 +32,8 @@ type Props = {
 
 export function LogseqSidebar({
   pages,
+  graphs,
+  activeGraph,
   search,
   onSearchChange,
   open,
@@ -88,7 +93,7 @@ export function LogseqSidebar({
       <aside
         className={`nodra-sidebar flex w-[270px] shrink-0 flex-col border-r ${open ? "open" : ""}`}
       >
-        <div className="flex items-center gap-2 border-b border-[var(--nodra-border)] px-3 py-2">
+        <div className="flex items-center gap-1 px-2 pt-2">
           <button
             type="button"
             className="nodra-icon-btn"
@@ -97,8 +102,8 @@ export function LogseqSidebar({
           >
             <Menu size={18} />
           </button>
-          <span className="font-semibold text-sm tracking-wide">NODRA</span>
         </div>
+        <GraphSwitcher graphs={graphs} activeGraph={activeGraph} />
 
         <div className="px-3 py-2">
           <div className="nodra-search-wrap flex items-center gap-2 rounded-md px-2 py-1.5">

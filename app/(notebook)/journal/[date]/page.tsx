@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getOrCreateJournal } from "@/lib/pages/service";
+import { getActiveGraphId } from "@/lib/graphs/service";
 import { getErrorMessage } from "@/lib/pages/document";
 import { ConnectionError } from "@/components/errors/connection-error";
 import { PageEditor } from "@/components/editor/page-editor";
@@ -13,7 +14,8 @@ export default async function JournalDayPage({ params }: Props) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) notFound();
 
   try {
-    const page = await getOrCreateJournal(date);
+    const graphId = await getActiveGraphId();
+    const page = await getOrCreateJournal(graphId, date);
 
     return (
       <div className="nodra-journal-feed mx-auto max-w-3xl px-8 py-6">

@@ -11,10 +11,29 @@ import {
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
+export const graphs = pgTable(
+  "graphs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    name: text("name").notNull(),
+    slug: text("slug").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [uniqueIndex("graphs_slug_idx").on(t.slug)],
+);
+
 export const pages = pgTable(
   "pages",
   {
     id: uuid("id").defaultRandom().primaryKey(),
+    graphId: uuid("graph_id")
+      .notNull()
+      .references(() => graphs.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     slug: text("slug").notNull(),
     type: text("type").notNull().$type<"page" | "journal">(),
@@ -27,9 +46,10 @@ export const pages = pgTable(
       .notNull(),
   },
   (t) => [
-    uniqueIndex("pages_slug_idx").on(t.slug),
+    uniqueIndex("pages_graph_slug_idx").on(t.graphId, t.slug),
     index("pages_journal_date_idx").on(t.journalDate),
     index("pages_type_idx").on(t.type),
+    index("pages_graph_id_idx").on(t.graphId),
   ],
 );
 
@@ -87,7 +107,15 @@ export const links = pgTable(
   ],
 );
 
+export const graphsRelations = relations(graphs, ({ many }) => ({
+  pages: many(pages),
+}));
+
 export const pagesRelations = relations(pages, ({ one, many }) => ({
+  graph: one(graphs, {
+    fields: [pages.graphId],
+    references: [graphs.id],
+  }),
   document: one(documents, {
     fields: [pages.id],
     references: [documents.pageId],

@@ -16,6 +16,7 @@ NODRA is a self-hosted block notebook: daily journals, wiki-style pages, and a p
 - Block references `((uuid))` and embed placeholders
 - Image paste and upload (Cloudflare R2)
 - Page graph with pan, zoom, and search
+- Multiple isolated graphs (switch or create from the sidebar)
 
 ## Stack
 

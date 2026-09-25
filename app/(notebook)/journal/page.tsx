@@ -1,5 +1,6 @@
 import { getJournalFeed } from "@/lib/pages/service";
 import { getErrorMessage } from "@/lib/pages/document";
+import { getActiveGraphId } from "@/lib/graphs/service";
 import { ConnectionError } from "@/components/errors/connection-error";
 import { PageEditor } from "@/components/editor/page-editor";
 
@@ -7,7 +8,8 @@ export const dynamic = "force-dynamic";
 
 export default async function JournalFeedPage() {
   try {
-    const entries = await getJournalFeed(14);
+    const graphId = await getActiveGraphId();
+    const entries = await getJournalFeed(graphId, 14);
 
     return (
       <div className="nodra-journal-feed mx-auto max-w-3xl px-8 py-6">
