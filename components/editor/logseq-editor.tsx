@@ -12,6 +12,7 @@ import { TagMark } from "./extensions/tag";
 import { BlockReference, BlockEmbed } from "./extensions/block-reference";
 import { PropertyBlock } from "./extensions/property-block";
 import { AssetImage } from "./extensions/asset-image";
+import { LogseqListItem } from "./extensions/logseq-list-item";
 import { handleLogseqPaste, uploadFileToEditor } from "./paste-handler";
 import { pageSlugFromName } from "@/lib/utils/slug";
 import { useAppActivity } from "@/components/shell/app-activity-context";
@@ -80,7 +81,9 @@ export function LogseqEditor({
       StarterKit.configure({
         bulletList: { keepMarks: true, keepAttributes: true },
         orderedList: false,
+        listItem: false,
       }),
+      LogseqListItem,
       TaskList.configure({
         HTMLAttributes: { class: "nodra-task-list" },
       }),

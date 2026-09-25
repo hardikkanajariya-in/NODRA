@@ -67,6 +67,13 @@ export async function buildImagePool(
   return { byName, ordered };
 }
 
+export function takeNextPoolImage(
+  pool: ImagePool,
+  used: Set<string>,
+): File | undefined {
+  return pool.ordered.find((f) => !used.has(f.name));
+}
+
 export function findImageForHint(
   pool: ImagePool,
   hint: string,

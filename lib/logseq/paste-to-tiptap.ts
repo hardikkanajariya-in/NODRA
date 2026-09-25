@@ -2,7 +2,11 @@ import type { BlockForest, BlockNode, InlineSpan } from "./types";
 import { parseLogseqMarkdown } from "./parser";
 import { parseLogseqHtml } from "./html-parser";
 import type { ImagePool } from "./clipboard-images";
-import { findImageForHint } from "./clipboard-images";
+import {
+  findImageForHint,
+  takeNextPoolImage,
+} from "./clipboard-images";
+import { normalizePastedForest } from "./forest-normalize";
 import { uploadAssetFile } from "@/lib/assets/upload-client";
 
 type PMNode = Record<string, unknown>;
@@ -34,7 +38,10 @@ export async function pasteClipboardToTiptap(
     return { type: "doc", content: [{ type: "paragraph" }] };
   }
 
+  forest = normalizePastedForest(forest);
+
   let imageIndex = 0;
+  let htmlSrcIndex = 0;
   const usedFiles = new Set<string>();
   const resolveImage = async (
     hint: string,
@@ -58,14 +65,13 @@ export async function pasteClipboardToTiptap(
         file = pool.ordered[imageIndex];
         imageIndex++;
       }
-      if (!file && htmlImageSrcs[imageIndex]?.startsWith("data:")) {
-        const src = htmlImageSrcs[imageIndex];
-        imageIndex++;
-        const res = await fetch(src);
-        const blob = await res.blob();
-        file = new File([blob], hint || `image-${imageIndex}.png`, {
-          type: blob.type,
-        });
+      if (!file && htmlImageSrcs[htmlSrcIndex]) {
+        const src = htmlImageSrcs[htmlSrcIndex];
+        htmlSrcIndex++;
+        file = await fileFromImageSrc(src, hint || `image-${htmlSrcIndex}.png`);
+      }
+      if (!file) {
+        file = takeNextPoolImage(pool, usedFiles);
       }
       if (!file) return null;
       usedFiles.add(file.name);
@@ -78,6 +84,8 @@ export async function pasteClipboardToTiptap(
           src: uploaded.url,
           alt: hint,
           assetId: uploaded.id,
+          align: "left",
+          caption: LOGSEQ_ASSET.test(hint) ? hint : null,
         },
       };
     } finally {
@@ -158,7 +166,14 @@ async function bulletsToList(
       const imageSpan = item.inlines.find((s) => s.type === "image");
       const url = imageSpan?.type === "image" ? imageSpan.url : undefined;
       const img = await resolveImage(item.imageHint, url);
-      if (img) listItemContent.push(img);
+      if (img) {
+        listItemContent.push(img);
+      } else if (!item.inlines.some((s) => s.type === "text" && s.text.trim())) {
+        listItemContent.push({
+          type: "paragraph",
+          content: [{ type: "text", text: item.imageHint }],
+        });
+      }
     }
 
     if (!item.imageHint) {
@@ -225,4 +240,26 @@ function inlineToPm(spans: InlineSpan[]): PMNode[] {
     }
   }
   return out;
+}
+
+const LOGSEQ_ASSET = /^(\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2})(\.[a-z0-9]+)?$/i;
+
+async function fileFromImageSrc(
+  src: string,
+  name: string,
+): Promise<File | null> {
+  if (
+    !src.startsWith("data:") &&
+    !src.startsWith("blob:") &&
+    !src.startsWith("http")
+  ) {
+    return null;
+  }
+  try {
+    const res = await fetch(src);
+    const blob = await res.blob();
+    return new File([blob], name, { type: blob.type || "image/png" });
+  } catch {
+    return null;
+  }
 }

@@ -12,7 +12,6 @@ import {
   Search,
 } from "lucide-react";
 import { format } from "date-fns";
-import { format } from "date-fns";
 import { useMemo, useState } from "react";
 import { GraphSwitcher, type GraphSummary } from "./graph-switcher";
 
@@ -55,7 +54,6 @@ export function LogseqSidebar({
 
   const recent = filtered.slice(0, 8);
 
-  const today = format(new Date(), "yyyy-MM-dd");
   const today = format(new Date(), "yyyy-MM-dd");
   const onPages =
     pathname.startsWith("/page/") || pathname.startsWith("/pages/");

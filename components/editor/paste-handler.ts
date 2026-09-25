@@ -100,7 +100,12 @@ async function uploadAndInsertImage(
       .focus()
       .insertContent({
         type: "image",
-        attrs: { src: data.url, alt: file.name, assetId: data.id },
+        attrs: {
+          src: data.url,
+          alt: file.name,
+          assetId: data.id,
+          align: "left",
+        },
       })
       .run();
   } catch {

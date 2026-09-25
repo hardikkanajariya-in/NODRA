@@ -374,10 +374,128 @@ body {
   cursor: pointer;
 }
 
-.nodra-editor-prose img {
+.nodra-asset-image {
+  margin: 0.35rem 0 0.5rem;
+  position: relative;
+}
+
+.nodra-asset-image--left .nodra-asset-image-frame {
+  margin-right: auto;
+}
+
+.nodra-asset-image--center .nodra-asset-image-frame {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.nodra-asset-image--right .nodra-asset-image-frame {
+  margin-left: auto;
+}
+
+.nodra-asset-image-frame {
+  position: relative;
+  max-width: 100%;
+  display: block;
+}
+
+.nodra-asset-image-frame img {
+  display: block;
+  max-width: 100%;
+  border-radius: 6px;
+  border: 1px solid var(--nodra-border);
+}
+
+.nodra-asset-image-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: ew-resize;
+  opacity: 0;
+  background: var(--nodra-accent);
+  border-radius: 3px;
+}
+
+.nodra-asset-image-frame:hover .nodra-asset-image-handle,
+.nodra-asset-image:focus-within .nodra-asset-image-handle {
+  opacity: 0.35;
+}
+
+.nodra-asset-image-handle--left {
+  left: -4px;
+}
+
+.nodra-asset-image-handle--right {
+  right: -4px;
+}
+
+.nodra-asset-image-toolbar {
+  position: absolute;
+  top: -0.25rem;
+  left: 0;
+  z-index: 5;
+  transform: translateY(-100%);
+}
+
+.nodra-asset-image-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 10rem;
+  padding: 0.35rem;
+  background: var(--nodra-main);
+  border: 1px solid var(--nodra-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
+  font-size: 0.8125rem;
+}
+
+.nodra-asset-image-menu button {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+  text-align: left;
+  color: var(--nodra-fg);
+}
+
+.nodra-asset-image-menu button:hover {
+  background: var(--nodra-block-hover);
+}
+
+.nodra-asset-image-menu-btn {
+  justify-content: space-between;
+}
+
+.nodra-asset-image-submenu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding-left: 0.35rem;
+  border-left: 1px solid var(--nodra-border);
+  margin-left: 0.25rem;
+}
+
+.nodra-asset-image-danger {
+  color: #c0392b;
+}
+
+.nodra-asset-image-caption {
+  margin: 0.2rem 0 0;
+  font-size: 0.75rem;
+  color: var(--nodra-muted);
+  font-family: ui-monospace, monospace;
+}
+
+.nodra-editor-prose img:not(.nodra-asset-image-frame img) {
   max-width: 100%;
   border-radius: 6px;
   margin: 0.5rem 0;
+}
+
+.nodra-editor-prose li .nodra-asset-image {
+  margin-left: -0.25rem;
 }
 
 .nodra-editor-prose p.is-editor-empty:first-child::before {

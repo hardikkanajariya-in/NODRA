@@ -1,7 +1,11 @@
 import Image from "@tiptap/extension-image";
+import { ReactNodeViewRenderer } from "@tiptap/react";
+import { AssetImageView } from "./asset-image-view";
 
 export const AssetImage = Image.extend({
   name: "image",
+
+  group: "block",
 
   addAttributes() {
     return {
@@ -9,6 +13,19 @@ export const AssetImage = Image.extend({
       assetId: {
         default: null,
       },
+      align: {
+        default: "left",
+      },
+      width: {
+        default: null,
+      },
+      caption: {
+        default: null,
+      },
     };
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(AssetImageView);
   },
 });

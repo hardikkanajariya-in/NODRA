@@ -84,9 +84,17 @@ function parseListItem(li: HTMLLIElement, depth: number): BlockNode | null {
   const img = li.querySelector(":scope > img, :scope > p > img, :scope img");
   let imageHint: string | undefined;
   if (img) {
-    const alt = img.getAttribute("alt") || "";
+    const alt = (img.getAttribute("alt") || "").trim();
     const src = img.getAttribute("src") || "";
-    imageHint = alt || src.split("/").pop() || "image";
+    const base = src.split(/[/\\]/).pop() ?? "";
+    const stem = base.replace(/\.[^.]+$/, "");
+    if (/^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$/i.test(stem)) {
+      imageHint = stem;
+    } else if (/^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$/i.test(alt)) {
+      imageHint = alt;
+    } else {
+      imageHint = alt || stem || "image";
+    }
   }
 
   const text = elementTextWithImages(clone);
