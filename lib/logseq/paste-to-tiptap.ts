@@ -1,4 +1,4 @@
-import type { BlockForest, BlockNode, InlineSpan } from "./types";
+import type { InlineSpan } from "./types";
 import { parseLogseqMarkdown } from "./parser";
 import { parseLogseqHtml } from "./html-parser";
 import type { ImagePool } from "./clipboard-images";
@@ -8,6 +8,7 @@ import {
 } from "./clipboard-images";
 import { normalizePastedForest } from "./forest-normalize";
 import { parseLogseqDbClipboard } from "./db-clipboard";
+import type { BlockForest, BlockNode } from "./types";
 
 type PMNode = Record<string, unknown>;
 
@@ -58,25 +59,41 @@ export async function prepareLogseqPaste(
   const text = clipboard.getData("text/plain");
   const edn = strings.find((s) => s.includes(":pages-and-blocks"));
 
-  let forest: BlockForest | null = null;
   let htmlImageSrcs: string[] = [];
+  const candidates: BlockForest[] = [];
 
   if (edn) {
-    forest = parseLogseqDbClipboard(edn);
+    try {
+      const parsed = parseLogseqDbClipboard(edn);
+      if (parsed?.length) candidates.push(parsed);
+    } catch {
+      // Keep the plain-text outline if the EDN payload is incomplete.
+    }
   }
-  if ((!forest || forest.length === 0) && html?.trim()) {
-    const parsed = parseLogseqHtml(html);
-    forest = parsed.forest;
-    htmlImageSrcs = parsed.htmlImageSrcs;
+  if (html?.trim()) {
+    try {
+      const parsed = parseLogseqHtml(html);
+      htmlImageSrcs = parsed.htmlImageSrcs;
+      if (parsed.forest.length) candidates.push(parsed.forest);
+    } catch {
+      // HTML from Logseq is optional; plain text still pastes.
+    }
   }
-  if ((!forest || forest.length === 0) && looksLikeMarkdown(text)) {
-    forest = parseLogseqMarkdown(text);
+  if (looksLikeMarkdown(text)) {
+    try {
+      const parsed = parseLogseqMarkdown(text);
+      if (parsed.length) candidates.push(parsed);
+    } catch {
+      // Ignore a broken markdown pass when another format succeeded.
+    }
   }
-  if (!forest || forest.length === 0) {
+
+  const picked = richestForest(candidates);
+  if (!picked) {
     return { content: [{ type: "paragraph" }], jobs: [] };
   }
 
-  forest = normalizePastedForest(forest);
+  const forest = normalizePastedForest(picked);
 
   const jobs: PendingAssetUpload[] = [];
   let imageIndex = 0;
@@ -134,6 +151,44 @@ export async function prepareLogseqPaste(
 
   const content = await forestToPm(forest, resolveImage);
   return { content, jobs };
+}
+
+function richestForest(candidates: BlockForest[]): BlockForest | null {
+  let best: BlockForest | null = null;
+  let bestWeight = -1;
+  for (const forest of candidates) {
+    const weight = forestWeight(forest);
+    if (weight > bestWeight) {
+      best = forest;
+      bestWeight = weight;
+    }
+  }
+  return best;
+}
+
+function forestWeight(forest: BlockForest): number {
+  let weight = 0;
+  const walk = (nodes: BlockNode[]) => {
+    for (const node of nodes) {
+      if (node.type === "property") {
+        weight += node.key.length + node.value.length;
+        continue;
+      }
+      if (node.type !== "bullet" && node.type !== "paragraph") continue;
+      for (const span of node.inlines) {
+        if (span.type === "text") weight += span.text.length;
+        else if (span.type === "pageRef" || span.type === "tag") {
+          weight += span.label.length;
+        } else weight += 1;
+      }
+      if (node.type === "bullet") {
+        if (node.imageHint) weight += node.imageHint.length;
+        walk(node.children);
+      }
+    }
+  };
+  walk(forest);
+  return weight;
 }
 
 function looksLikeMarkdown(text: string): boolean {
@@ -224,8 +279,11 @@ async function bulletsToList(
       const url = imageSpan?.type === "image" ? imageSpan.url : undefined;
       const img = await resolveImage(item.imageHint, url, item.imageWidth);
       if (img) {
+        if (paragraphIsOnlyAssetLabel(listItemContent, item.imageHint)) {
+          listItemContent.length = 0;
+        }
         listItemContent.push(img);
-      } else if (!item.inlines.some((s) => s.type === "text" && s.text.trim())) {
+      } else if (!listItemContent.some((node) => node.type === "paragraph")) {
         listItemContent.push({
           type: "paragraph",
           content: [{ type: "text", text: item.imageHint }],
@@ -242,9 +300,7 @@ async function bulletsToList(
       }
     }
 
-    if (listItemContent[0]?.type !== "paragraph") {
-      listItemContent.unshift({ type: "paragraph" });
-    }
+    collapseToOneParagraph(listItemContent);
 
     if (childList) listItemContent.push(childList);
 
@@ -254,16 +310,46 @@ async function bulletsToList(
   return { type: "bulletList", content };
 }
 
+function paragraphIsOnlyAssetLabel(blocks: PMNode[], hint: string): boolean {
+  if (blocks.length !== 1 || blocks[0]?.type !== "paragraph") return false;
+  const content = blocks[0].content;
+  if (!Array.isArray(content) || content.length !== 1) return false;
+  const only = content[0] as PMNode;
+  if (only.type === "pageReference") {
+    return (only.attrs as { label?: string } | undefined)?.label === hint;
+  }
+  return only.type === "text" && only.text === hint;
+}
+
+/** List items allow one paragraph, then blocks. Extra paragraphs are merged. */
+function collapseToOneParagraph(blocks: PMNode[]) {
+  const paragraphs = blocks.filter((node) => node.type === "paragraph");
+  const rest = blocks.filter((node) => node.type !== "paragraph");
+  const merged: PMNode[] = [];
+  for (const paragraph of paragraphs) {
+    if (Array.isArray(paragraph.content)) {
+      merged.push(...(paragraph.content as PMNode[]));
+    }
+  }
+  blocks.length = 0;
+  blocks.push(
+    merged.length ? { type: "paragraph", content: merged } : { type: "paragraph" },
+    ...rest,
+  );
+}
+
 function inlineToPm(spans: InlineSpan[]): PMNode[] {
   const out: PMNode[] = [];
   for (const span of spans) {
     switch (span.type) {
       case "text": {
+        if (!span.text) break;
         const node: PMNode = { type: "text", text: span.text };
-        if (span.strike) {
-          node.marks = [{ type: "strike" }];
-        }
-        if (span.text) out.push(node);
+        const marks: PMNode[] = [];
+        if (span.bold) marks.push({ type: "bold" });
+        if (span.strike) marks.push({ type: "strike" });
+        if (marks.length) node.marks = marks;
+        out.push(node);
         break;
       }
       case "pageRef":

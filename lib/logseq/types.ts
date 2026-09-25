@@ -1,5 +1,5 @@
 export type InlineSpan =
-  | { type: "text"; text: string; strike?: boolean }
+  | { type: "text"; text: string; strike?: boolean; bold?: boolean }
   | { type: "pageRef"; label: string }
   | { type: "tag"; label: string; bracketed: boolean }
   | { type: "blockRef"; id: string }

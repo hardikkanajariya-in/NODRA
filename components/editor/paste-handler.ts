@@ -149,14 +149,18 @@ async function processPaste(
 }
 
 function insertPreparedContent(editor: Editor, content: JsonNode[]): boolean {
-  const items = listItemsFromPaste(content);
-  const range = items
-    ? outlinePasteRange(editor.state.doc, editor.state.selection.from)
-    : null;
-  if (items && range) {
-    return editor.chain().focus().insertContentAt(range, items).run();
+  try {
+    const items = listItemsFromPaste(content);
+    const range = items
+      ? outlinePasteRange(editor.state.doc, editor.state.selection.from)
+      : null;
+    if (items && range) {
+      return editor.chain().focus().insertContentAt(range, items).run();
+    }
+    return editor.chain().focus().insertContent(content).run();
+  } catch {
+    return false;
   }
-  return editor.chain().focus().insertContent(content).run();
 }
 
 function replaceUploadedImage(

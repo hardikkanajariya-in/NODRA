@@ -8,6 +8,7 @@ const TAG_BRACKET = /#\[\[([^\]]+)\]\]/g;
 const TAG_SIMPLE = /#([^\s#\[.,;:!?]+)/g;
 const IMAGE_MD = /!\[([^\]]*)\]\(([^)]+)\)/g;
 const STRIKE = /~~([^~]+)~~/g;
+const BOLD = /\*\*([^*]+)\*\*/g;
 
 type Token =
   | { kind: "text"; start: number; end: number; text: string }
@@ -16,7 +17,8 @@ type Token =
   | { kind: "blockEmbed"; start: number; end: number; id: string }
   | { kind: "tag"; start: number; end: number; label: string; bracketed: boolean }
   | { kind: "image"; start: number; end: number; alt: string; url: string }
-  | { kind: "strike"; start: number; end: number; text: string };
+  | { kind: "strike"; start: number; end: number; text: string }
+  | { kind: "bold"; start: number; end: number; text: string };
 
 function collectTokens(input: string): Token[] {
   const tokens: Token[] = [];
@@ -81,6 +83,13 @@ function collectTokens(input: string): Token[] {
     text: m[1],
   }));
 
+  addMatches(BOLD, (m) => ({
+    kind: "bold",
+    start: m.index,
+    end: m.index + m[0].length,
+    text: m[1],
+  }));
+
   tokens.sort((a, b) => a.start - b.start);
 
   const filtered: Token[] = [];
@@ -127,6 +136,9 @@ export function parseInline(text: string): InlineSpan[] {
         break;
       case "strike":
         spans.push({ type: "text", text: t.text, strike: true });
+        break;
+      case "bold":
+        spans.push({ type: "text", text: t.text, bold: true });
         break;
       default:
         break;

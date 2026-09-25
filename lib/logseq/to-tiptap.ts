@@ -9,7 +9,10 @@ function inlineToPm(spans: InlineSpan[]): PMNode[] {
       case "text": {
         if (!span.text) break;
         const node: PMNode = { type: "text", text: span.text };
-        if (span.strike) node.marks = [{ type: "strike" }];
+        const marks: PMNode[] = [];
+        if (span.bold) marks.push({ type: "bold" });
+        if (span.strike) marks.push({ type: "strike" });
+        if (marks.length) node.marks = marks;
         out.push(node);
         break;
       }

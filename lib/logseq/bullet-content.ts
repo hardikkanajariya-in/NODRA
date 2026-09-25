@@ -31,6 +31,16 @@ export function parseBulletContent(raw: string): {
     return { inlines: [], done: false, imageHint: text };
   }
 
+  const imageEmbed = text.match(/^\[\[(image_\d+_\d+)\]\]$/i);
+  if (imageEmbed) {
+    const label = imageEmbed[1];
+    return {
+      inlines: [{ type: "pageRef", label }],
+      done: false,
+      imageHint: label,
+    };
+  }
+
   if (!text && raw.includes("![image]")) {
     return { inlines: parseInline(raw), done, imageHint: "image" };
   }
