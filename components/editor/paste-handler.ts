@@ -3,10 +3,16 @@ import { blockForestToTiptap } from "@/lib/logseq/to-tiptap";
 import { parseLogseqMarkdown } from "@/lib/logseq/parser";
 import { htmlToLogseqForest } from "@/lib/logseq/html-to-blocks";
 
+export type UploadHandlers = {
+  onUploadStart?: () => void;
+  onUploadEnd?: () => void;
+};
+
 export function handleLogseqPaste(
   editor: Editor,
   event: ClipboardEvent,
   pageId: string,
+  upload?: UploadHandlers,
 ): boolean {
   const clipboard = event.clipboardData;
   if (!clipboard) return false;
@@ -15,7 +21,7 @@ export function handleLogseqPaste(
   const imageFile = files.find((f) => f.type.startsWith("image/"));
   if (imageFile) {
     event.preventDefault();
-    uploadAndInsertImage(editor, imageFile, pageId);
+    void uploadAndInsertImage(editor, imageFile, pageId, upload);
     return true;
   }
 
@@ -39,11 +45,23 @@ export function handleLogseqPaste(
   return false;
 }
 
+export async function uploadFileToEditor(
+  editor: Editor,
+  file: File,
+  pageId: string,
+  upload?: UploadHandlers,
+) {
+  await uploadAndInsertImage(editor, file, pageId, upload);
+}
+
 async function uploadAndInsertImage(
   editor: Editor,
   file: File,
   pageId: string,
+  upload?: UploadHandlers,
 ) {
+  upload?.onUploadStart?.();
+
   const form = new FormData();
   form.append("file", file);
   form.append("pageId", pageId);
@@ -65,5 +83,7 @@ async function uploadAndInsertImage(
       .run();
   } catch {
     editor.chain().focus().insertContent(`![${file.name}](file://local)`).run();
+  } finally {
+    upload?.onUploadEnd?.();
   }
 }

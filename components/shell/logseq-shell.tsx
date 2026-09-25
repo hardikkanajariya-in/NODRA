@@ -2,13 +2,11 @@
 
 import { useState } from "react";
 import { LogseqHeader } from "./logseq-header";
-import {
-  LogseqSidebar,
-  type SidebarPage,
-} from "./logseq-sidebar";
-import type { GraphSummary } from "./graph-switcher";
-import { SaveStatusProvider } from "./save-status-context";
+import { LogseqSidebar, type SidebarPage } from "./logseq-sidebar";
+import { AppActivityProvider } from "./app-activity-context";
+import { RouteLoadingBar } from "./route-loading-bar";
 import { ThemeProvider } from "./theme-provider";
+import type { GraphSummary } from "./graph-switcher";
 
 type Props = {
   pages: SidebarPage[];
@@ -28,8 +26,9 @@ export function LogseqShell({
 
   return (
     <ThemeProvider>
-      <SaveStatusProvider>
+      <AppActivityProvider>
         <div className="nodra-app flex h-screen">
+          <RouteLoadingBar />
           <LogseqSidebar
             pages={pages}
             graphs={graphs}
@@ -47,7 +46,7 @@ export function LogseqShell({
             </main>
           </div>
         </div>
-      </SaveStatusProvider>
+      </AppActivityProvider>
     </ThemeProvider>
   );
 }

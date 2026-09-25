@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ClientNavLink } from "./client-nav-link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   CalendarDays,
@@ -10,6 +11,8 @@ import {
   Plus,
   Search,
 } from "lucide-react";
+import { format } from "date-fns";
+import { format } from "date-fns";
 import { useMemo, useState } from "react";
 import { GraphSwitcher, type GraphSummary } from "./graph-switcher";
 
@@ -52,7 +55,8 @@ export function LogseqSidebar({
 
   const recent = filtered.slice(0, 8);
 
-  const onJournal = pathname === "/journal" || pathname.startsWith("/journal/");
+  const today = format(new Date(), "yyyy-MM-dd");
+  const today = format(new Date(), "yyyy-MM-dd");
   const onPages =
     pathname.startsWith("/page/") || pathname.startsWith("/pages/");
   const onGraph = pathname === "/graph";
@@ -121,43 +125,50 @@ export function LogseqSidebar({
         <div className="flex-1 overflow-y-auto px-2 pb-3">
           <p className="nodra-sidebar-label px-2 pt-1">Navigation</p>
           <nav className="space-y-0.5 px-1">
-            <Link
+            <ClientNavLink
               href="/journal"
-              className={navClass(onJournal)}
+              className={navClass(pathname === "/journal")}
               onClick={onClose}
             >
               <CalendarDays size={16} />
               Journals
-            </Link>
-            <Link
+            </ClientNavLink>
+            <ClientNavLink
+              href={`/journal/${today}`}
+              className={navClass(pathname === `/journal/${today}`)}
+              onClick={onClose}
+            >
+              <span className="pl-6 text-[var(--nodra-muted)]">Today</span>
+            </ClientNavLink>
+            <ClientNavLink
               href={recent[0] ? `/pages/${recent[0].slug}` : "/journal"}
               className={navClass(onPages)}
               onClick={onClose}
             >
               <FileText size={16} />
               Pages
-            </Link>
-            <Link
+            </ClientNavLink>
+            <ClientNavLink
               href="/graph"
               className={navClass(onGraph)}
               onClick={onClose}
             >
               <GitBranch size={16} />
               Graph view
-            </Link>
+            </ClientNavLink>
           </nav>
 
           <p className="nodra-sidebar-label mt-4 px-2">Recent</p>
           <div className="space-y-0.5 px-1">
             {recent.map((p) => (
-              <Link
+              <ClientNavLink
                 key={p.id}
                 href={`/pages/${p.slug}`}
                 className={navClass(pathname === `/pages/${p.slug}`)}
                 onClick={onClose}
               >
                 <span className="truncate">{p.name}</span>
-              </Link>
+              </ClientNavLink>
             ))}
             {recent.length === 0 && (
               <p className="px-2 py-1 text-xs text-[var(--nodra-muted)]">
@@ -169,14 +180,14 @@ export function LogseqSidebar({
           <p className="nodra-sidebar-label mt-4 px-2">All pages</p>
           <div className="max-h-48 space-y-0.5 overflow-y-auto px-1">
             {filtered.map((p) => (
-              <Link
+              <ClientNavLink
                 key={p.id}
                 href={`/pages/${p.slug}`}
                 className={navClass(pathname === `/pages/${p.slug}`)}
                 onClick={onClose}
               >
                 <span className="truncate">{p.name}</span>
-              </Link>
+              </ClientNavLink>
             ))}
           </div>
         </div>

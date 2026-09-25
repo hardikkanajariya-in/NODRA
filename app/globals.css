@@ -14,6 +14,7 @@
   --nodra-danger: #cb2431;
   --nodra-bullet: #9aa0a6;
   --nodra-nav-active: #e8e8e8;
+  --nodra-block-hover: rgba(0, 0, 0, 0.04);
 }
 
 [data-theme="dark"] {
@@ -29,11 +30,13 @@
   --nodra-danger: #f87171;
   --nodra-bullet: #6b7280;
   --nodra-nav-active: #2a2f38;
+  --nodra-block-hover: rgba(255, 255, 255, 0.06);
 }
 
 body {
   background: var(--nodra-bg);
   color: var(--nodra-fg);
+  caret-color: var(--nodra-fg);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -191,36 +194,156 @@ body {
 .nodra-editor-prose {
   font-size: 1rem;
   line-height: 1.65;
-  min-height: 2rem;
+  min-height: 1.5rem;
+  caret-color: var(--nodra-fg);
 }
 
-.nodra-editor-prose ul {
+.nodra-editor-page {
+  min-height: 50vh;
+}
+
+.nodra-editor-journal {
+  min-height: 0;
+}
+
+.nodra-editor-prose ul:not([data-type="taskList"]) {
   list-style: none;
   padding-left: 0;
-  margin: 0.1rem 0;
+  margin: 0.05rem 0;
 }
 
-.nodra-editor-prose li {
+.nodra-editor-prose ul:not([data-type="taskList"]) > li {
   position: relative;
-  padding-left: 1.35rem;
-  margin: 0.12rem 0;
+  padding: 0.125rem 0 0.125rem 1.5rem;
+  margin: 0;
+  border-radius: 4px;
 }
 
-.nodra-editor-prose li::before {
+.nodra-editor-prose ul:not([data-type="taskList"]) > li:hover {
+  background: var(--nodra-block-hover);
+}
+
+.nodra-editor-prose ul:not([data-type="taskList"]) > li::before {
   content: "";
   position: absolute;
-  left: 0.4rem;
-  top: 0.72em;
-  width: 5px;
-  height: 5px;
+  left: 0.55rem;
+  top: 0.78em;
+  width: 6px;
+  height: 6px;
   border-radius: 999px;
   background: var(--nodra-bullet);
 }
 
-.nodra-editor-prose li ul {
-  margin-left: 0.5rem;
+.nodra-editor-prose ul:not([data-type="taskList"]) li ul {
+  margin-left: 0.35rem;
   border-left: 1px solid var(--nodra-border);
-  padding-left: 0.65rem;
+  padding-left: 0.5rem;
+}
+
+.nodra-editor-prose p {
+  margin: 0;
+  min-height: 1.65em;
+}
+
+.nodra-editor-prose ul[data-type="taskList"] {
+  list-style: none;
+  padding: 0;
+  margin: 0.05rem 0;
+}
+
+.nodra-editor-prose li[data-type="taskItem"] {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.125rem 0.25rem;
+  border-radius: 4px;
+}
+
+.nodra-editor-prose li[data-type="taskItem"]:hover {
+  background: var(--nodra-block-hover);
+}
+
+.nodra-editor-prose li[data-type="taskItem"] > label {
+  margin-top: 0.2rem;
+  user-select: none;
+}
+
+.nodra-editor-prose li[data-type="taskItem"][data-checked="true"] > div {
+  text-decoration: line-through;
+  color: var(--nodra-muted);
+}
+
+.nodra-skeleton-line {
+  display: block;
+  height: 0.875rem;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--nodra-sidebar) 0%,
+    var(--nodra-border) 50%,
+    var(--nodra-sidebar) 100%
+  );
+  background-size: 200% 100%;
+  animation: nodra-shimmer 1.2s ease-in-out infinite;
+}
+
+.nodra-skeleton-bullet {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  margin-top: 0.45rem;
+  flex-shrink: 0;
+  background: var(--nodra-border);
+}
+
+@keyframes nodra-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.nodra-route-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: 2px;
+  background: var(--nodra-border);
+  overflow: hidden;
+}
+
+.nodra-route-loading-bar {
+  height: 100%;
+  width: 40%;
+  background: var(--nodra-accent);
+  animation: nodra-route-slide 1s ease-in-out infinite;
+}
+
+@keyframes nodra-route-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+.nodra-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--nodra-accent);
+}
+
+.nodra-journal-nav-btn {
+  color: var(--nodra-muted);
+}
+.nodra-journal-nav-btn:hover {
+  color: var(--nodra-link);
 }
 
 .nodra-page-ref,
@@ -263,6 +386,30 @@ body {
 
 .nodra-graph {
   background: var(--nodra-main);
+  color: var(--nodra-fg);
+  cursor: default;
+}
+
+.nodra-graph-canvas,
+.nodra-graph-canvas .react-flow,
+.nodra-graph-canvas .react-flow__viewport,
+.nodra-graph-canvas .react-flow__pane,
+.nodra-graph-canvas .react-flow__renderer {
+  cursor: default !important;
+}
+
+.nodra-graph-canvas .react-flow__pane.draggable {
+  cursor: grab !important;
+}
+
+.nodra-graph-canvas .react-flow__pane.dragging {
+  cursor: grabbing !important;
+}
+
+.nodra-graph .nodra-search {
+  cursor: text !important;
+  caret-color: var(--nodra-fg);
+  color: var(--nodra-fg);
 }
 
 .nodra-graph .react-flow__node {
@@ -271,6 +418,12 @@ body {
   border-radius: 999px;
   border: 1px solid var(--nodra-border);
   background: var(--nodra-sidebar);
+  color: var(--nodra-fg);
+  cursor: pointer !important;
+}
+
+.nodra-graph .react-flow__controls button {
+  cursor: pointer !important;
 }
 
 .nodra-graph-journal {

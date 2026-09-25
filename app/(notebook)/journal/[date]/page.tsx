@@ -4,6 +4,7 @@ import { getActiveGraphId } from "@/lib/graphs/service";
 import { getErrorMessage } from "@/lib/pages/document";
 import { ConnectionError } from "@/components/errors/connection-error";
 import { PageEditor } from "@/components/editor/page-editor";
+import { JournalDayNav } from "@/components/journal/journal-day-nav";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,8 @@ export default async function JournalDayPage({ params }: Props) {
     const page = await getOrCreateJournal(graphId, date);
 
     return (
-      <div className="nodra-journal-feed mx-auto max-w-3xl px-8 py-6">
+      <div className="nodra-journal-feed mx-auto max-w-3xl px-6 py-4 md:px-10">
+        <JournalDayNav date={date} />
         <section className="nodra-journal-section">
           <h2 className="nodra-journal-date">{page.name}</h2>
           <PageEditor
@@ -26,6 +28,7 @@ export default async function JournalDayPage({ params }: Props) {
             initialContent={
               page.document!.contentJson as Record<string, unknown>
             }
+            variant="journal"
           />
         </section>
       </div>

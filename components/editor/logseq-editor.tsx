@@ -4,29 +4,42 @@ import { useCallback, useEffect, useRef } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
+import TaskList from "@tiptap/extension-task-list";
+import TaskItem from "@tiptap/extension-task-item";
 import { useRouter } from "next/navigation";
 import { PageReference } from "./extensions/page-reference";
 import { TagMark } from "./extensions/tag";
 import { BlockReference, BlockEmbed } from "./extensions/block-reference";
 import { PropertyBlock } from "./extensions/property-block";
 import { AssetImage } from "./extensions/asset-image";
-import { handleLogseqPaste } from "./paste-handler";
+import { handleLogseqPaste, uploadFileToEditor } from "./paste-handler";
 import { pageSlugFromName } from "@/lib/utils/slug";
-import { useSaveStatus } from "@/components/shell/save-status-context";
+import { useAppActivity } from "@/components/shell/app-activity-context";
 
 type Props = {
   pageId: string;
   initialContent: Record<string, unknown>;
+  variant?: "page" | "journal";
 };
 
-export function LogseqEditor({ pageId, initialContent }: Props) {
+export function LogseqEditor({
+  pageId,
+  initialContent,
+  variant = "page",
+}: Props) {
   const router = useRouter();
-  const { setStatus, setLastSaved } = useSaveStatus();
+  const { setSaveStatus, setLastSaved, beginUpload, endUpload } =
+    useAppActivity();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const uploadHandlers = {
+    onUploadStart: beginUpload,
+    onUploadEnd: endUpload,
+  };
 
   const persist = useCallback(
     async (json: Record<string, unknown>) => {
-      setStatus("saving");
+      setSaveStatus("saving");
       try {
         const res = await fetch(`/api/documents/${pageId}`, {
           method: "PUT",
@@ -34,16 +47,16 @@ export function LogseqEditor({ pageId, initialContent }: Props) {
           body: JSON.stringify({ contentJson: json }),
         });
         if (res.ok) {
-          setStatus("saved");
+          setSaveStatus("saved");
           setLastSaved(new Date());
         } else {
-          setStatus("error");
+          setSaveStatus("error");
         }
       } catch {
-        setStatus("error");
+        setSaveStatus("error");
       }
     },
-    [pageId, setStatus, setLastSaved],
+    [pageId, setSaveStatus, setLastSaved],
   );
 
   const scheduleSave = useCallback(
@@ -56,14 +69,27 @@ export function LogseqEditor({ pageId, initialContent }: Props) {
 
   const editorRef = useRef<ReturnType<typeof useEditor>>(null);
 
+  const proseClass =
+    variant === "journal"
+      ? "nodra-editor-prose nodra-editor-journal focus:outline-none"
+      : "nodra-editor-prose nodra-editor-page focus:outline-none min-h-[50vh]";
+
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
       StarterKit.configure({
         bulletList: { keepMarks: true, keepAttributes: true },
+        orderedList: false,
+      }),
+      TaskList.configure({
+        HTMLAttributes: { class: "nodra-task-list" },
+      }),
+      TaskItem.configure({
+        nested: true,
+        HTMLAttributes: { class: "nodra-task-item" },
       }),
       Placeholder.configure({
-        placeholder: "Write something, or paste from Logseq…",
+        placeholder: "Type '/' for commands, or paste from Logseq…",
       }),
       PageReference,
       TagMark,
@@ -75,7 +101,7 @@ export function LogseqEditor({ pageId, initialContent }: Props) {
     content: initialContent,
     editorProps: {
       attributes: {
-        class: "nodra-editor-prose focus:outline-none min-h-[60vh]",
+        class: proseClass,
       },
       handleDOMEvents: {
         click: (_view, event) => {
@@ -98,7 +124,18 @@ export function LogseqEditor({ pageId, initialContent }: Props) {
         paste: (_view, event) => {
           const ed = editorRef.current;
           if (!ed) return false;
-          return handleLogseqPaste(ed, event, pageId);
+          return handleLogseqPaste(ed, event, pageId, uploadHandlers);
+        },
+        drop: (view, event) => {
+          const ed = editorRef.current;
+          if (!ed || !event.dataTransfer?.files?.length) return false;
+          const file = [...event.dataTransfer.files].find((f) =>
+            f.type.startsWith("image/"),
+          );
+          if (!file) return false;
+          event.preventDefault();
+          void uploadFileToEditor(ed, file, pageId, uploadHandlers);
+          return true;
         },
       },
     },
@@ -116,7 +153,11 @@ export function LogseqEditor({ pageId, initialContent }: Props) {
     };
   }, []);
 
-  return <EditorContent editor={editor} />;
+  return (
+    <div className="nodra-editor-wrap relative">
+      <EditorContent editor={editor} />
+    </div>
+  );
 }
 
 async function navigateToPage(
