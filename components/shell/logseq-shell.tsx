@@ -18,20 +18,18 @@ export function LogseqShell({ pages, children }: Props) {
   return (
     <ThemeProvider>
       <SaveStatusProvider>
-        <div className="nodra-app flex h-screen flex-col">
-          <LogseqHeader
-            onMenuClick={() => setSidebarOpen((v) => !v)}
+        <div className="nodra-app flex h-screen">
+          <LogseqSidebar
+            pages={pages}
             search={search}
             onSearchChange={setSearch}
+            open={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            onMenuClick={() => setSidebarOpen((v) => !v)}
           />
-          <div className="flex min-h-0 flex-1">
-            <LogseqSidebar
-              pages={pages}
-              search={search}
-              open={sidebarOpen}
-              onClose={() => setSidebarOpen(false)}
-            />
-            <main className="nodra-main min-w-0 flex-1 overflow-y-auto">
+          <div className="flex min-w-0 flex-1 flex-col">
+            <LogseqHeader />
+            <main className="nodra-main min-h-0 flex-1 overflow-y-auto">
               {children}
             </main>
           </div>

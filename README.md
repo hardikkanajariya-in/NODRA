@@ -9,7 +9,7 @@ NODRA is a self-hosted block notebook: daily journals, wiki-style pages, and a p
 
 - Password-protected single-user access (password from environment variables)
 - Daily journals at `/journal/YYYY-MM-DD`
-- Pages at `/page/<slug>`
+- Pages at `/pages/<slug>`
 - Nested block editor (Tab / Shift+Tab, Enter, autosave)
 - Logseq Markdown paste (plain text and HTML clipboard)
 - `[[Page references]]`, `#tags`, `key:: value` properties

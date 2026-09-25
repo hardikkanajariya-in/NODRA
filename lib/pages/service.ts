@@ -7,11 +7,7 @@ import {
   extractPageNamesFromText,
   extractPlainTextFromTiptap,
 } from "@/lib/links/extract";
-
-const emptyDoc = {
-  type: "doc",
-  content: [{ type: "paragraph" }],
-};
+import { emptyDoc, ensureDocument } from "@/lib/pages/document";
 
 export async function listPages() {
   return db.query.pages.findMany({
@@ -56,40 +52,54 @@ export async function createPage(name: string) {
     })
     .returning();
 
-  await db.insert(documents).values({
-    pageId: page.id,
-    contentJson: emptyDoc,
-    plainText: "",
-  });
+  await ensureDocument(page.id);
 
   return getPageById(page.id);
 }
 
 export async function getOrCreateJournal(dateStr: string) {
   const slug = journalSlugFromDate(dateStr);
-  const existing = await getPageBySlug(slug);
-  if (existing) return existing;
+  let page = await getPageBySlug(slug);
 
-  const parsed = parseISO(dateStr);
-  const name = format(parsed, "MMMM do, yyyy");
+  if (!page) {
+    const parsed = parseISO(`${dateStr}T12:00:00`);
+    const name = format(parsed, "MMM do, yyyy");
 
-  const [page] = await db
-    .insert(pages)
-    .values({
-      name,
-      slug,
-      type: "journal",
-      journalDate: dateStr,
-    })
-    .returning();
+    const [created] = await db
+      .insert(pages)
+      .values({
+        name,
+        slug,
+        type: "journal",
+        journalDate: dateStr,
+      })
+      .returning();
 
-  await db.insert(documents).values({
-    pageId: page.id,
-    contentJson: emptyDoc,
-    plainText: "",
-  });
+    await ensureDocument(created.id);
+    page = await getPageById(created.id);
+  } else if (!page.document) {
+    await ensureDocument(page.id);
+    page = await getPageById(page.id);
+  }
 
-  return getPageById(page.id);
+  if (!page?.document) {
+    throw new Error("Journal page exists but document could not be loaded.");
+  }
+
+  return page;
+}
+
+export async function getJournalFeed(dayCount = 14) {
+  const dates: string[] = [];
+  const now = new Date();
+  for (let i = 0; i < dayCount; i++) {
+    const d = new Date(now);
+    d.setDate(now.getDate() - i);
+    dates.push(format(d, "yyyy-MM-dd"));
+  }
+
+  const entries = await Promise.all(dates.map((d) => getOrCreateJournal(d)));
+  return entries;
 }
 
 export async function updatePageName(id: string, name: string) {

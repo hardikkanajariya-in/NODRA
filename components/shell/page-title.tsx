@@ -25,7 +25,7 @@ export function PageTitle({ pageId, name, journal }: Props) {
     });
     if (res.ok) {
       const updated = (await res.json()) as { slug: string };
-      router.push(`/page/${updated.slug}`);
+      router.push(`/pages/${updated.slug}`);
       router.refresh();
     }
   }

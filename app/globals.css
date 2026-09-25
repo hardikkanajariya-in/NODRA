@@ -1,6 +1,21 @@
 @import "tailwindcss";
 
 :root,
+[data-theme="light"] {
+  --nodra-bg: #f7f7f7;
+  --nodra-main: #ffffff;
+  --nodra-sidebar: #f3f3f3;
+  --nodra-border: #e8e8e8;
+  --nodra-fg: #24292e;
+  --nodra-muted: #6a737d;
+  --nodra-accent: #045591;
+  --nodra-link: #045591;
+  --nodra-tag: #5c3c8b;
+  --nodra-danger: #cb2431;
+  --nodra-bullet: #9aa0a6;
+  --nodra-nav-active: #e8e8e8;
+}
+
 [data-theme="dark"] {
   --nodra-bg: #16181c;
   --nodra-main: #1e2127;
@@ -9,22 +24,11 @@
   --nodra-fg: #e6e8eb;
   --nodra-muted: #9aa3b2;
   --nodra-accent: #3b82f6;
+  --nodra-link: #60a5fa;
   --nodra-tag: #a78bfa;
   --nodra-danger: #f87171;
   --nodra-bullet: #6b7280;
-}
-
-[data-theme="light"] {
-  --nodra-bg: #f3f4f6;
-  --nodra-main: #ffffff;
-  --nodra-sidebar: #eceef2;
-  --nodra-border: #d8dde6;
-  --nodra-fg: #111827;
-  --nodra-muted: #6b7280;
-  --nodra-accent: #2563eb;
-  --nodra-tag: #7c3aed;
-  --nodra-danger: #dc2626;
-  --nodra-bullet: #9ca3af;
+  --nodra-nav-active: #2a2f38;
 }
 
 body {
@@ -38,25 +42,29 @@ body {
   color: var(--nodra-fg);
 }
 
-.nodra-header {
+.nodra-sidebar {
   background: var(--nodra-sidebar);
   border-color: var(--nodra-border);
 }
 
-.nodra-sidebar {
-  background: var(--nodra-sidebar);
-  border-color: var(--nodra-border);
+.nodra-main {
+  background: var(--nodra-main);
+}
+
+.nodra-main-toolbar {
+  background: var(--nodra-main);
 }
 
 @media (max-width: 767px) {
   .nodra-sidebar {
     position: fixed;
     z-index: 40;
-    top: 2.75rem;
+    top: 0;
     bottom: 0;
     left: 0;
     transform: translateX(-100%);
     transition: transform 0.2s ease;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   }
   .nodra-sidebar.open {
     transform: translateX(0);
@@ -64,20 +72,15 @@ body {
   .nodra-sidebar-backdrop {
     position: fixed;
     inset: 0;
-    top: 2.75rem;
     z-index: 30;
-    background: rgba(0, 0, 0, 0.45);
+    background: rgba(0, 0, 0, 0.35);
   }
 }
 
-.nodra-main {
-  background: var(--nodra-main);
-}
-
 .nodra-sidebar-label {
-  font-size: 0.65rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--nodra-muted);
 }
@@ -85,16 +88,27 @@ body {
 .nodra-nav-item {
   color: var(--nodra-fg);
 }
-.nodra-nav-item:hover,
+.nodra-nav-item:hover {
+  background: var(--nodra-nav-active);
+}
 .nodra-nav-item.active {
-  background: color-mix(in srgb, var(--nodra-accent) 18%, transparent);
+  background: var(--nodra-nav-active);
+  font-weight: 500;
+}
+
+.nodra-search-wrap {
+  background: var(--nodra-main);
+  border: 1px solid var(--nodra-border);
+}
+
+.nodra-search-input {
   color: var(--nodra-fg);
 }
 
 .nodra-search,
 .nodra-input,
 .nodra-title-input {
-  background: var(--nodra-bg);
+  background: var(--nodra-main);
   border: 1px solid var(--nodra-border);
   border-radius: 6px;
   color: var(--nodra-fg);
@@ -108,7 +122,7 @@ body {
   color: var(--nodra-muted);
 }
 .nodra-icon-btn:hover {
-  background: color-mix(in srgb, var(--nodra-fg) 8%, transparent);
+  background: var(--nodra-nav-active);
   color: var(--nodra-fg);
 }
 
@@ -116,6 +130,29 @@ body {
   font-family: Georgia, "Times New Roman", serif;
   font-size: 1.75rem;
   line-height: 1.25;
+  font-weight: 400;
+}
+
+.nodra-journal-date {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.75rem;
+  font-weight: 400;
+  margin: 0 0 0.5rem;
+  color: var(--nodra-fg);
+}
+
+.nodra-journal-section {
+  padding: 0.5rem 0 1.5rem;
+}
+
+.nodra-journal-divider {
+  border: none;
+  border-top: 1px solid var(--nodra-border);
+  margin: 2rem 0;
+}
+
+.nodra-journal-feed {
+  padding-bottom: 4rem;
 }
 
 .nodra-login {
@@ -124,6 +161,19 @@ body {
 .nodra-login-card {
   background: var(--nodra-main);
   border-color: var(--nodra-border);
+}
+
+.nodra-error-card {
+  background: var(--nodra-main);
+  border-color: var(--nodra-border);
+}
+
+.nodra-inline-code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85em;
+  background: var(--nodra-sidebar);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
 }
 
 .nodra-btn-primary {
@@ -140,26 +190,27 @@ body {
 
 .nodra-editor-prose {
   font-size: 1rem;
-  line-height: 1.6;
+  line-height: 1.65;
+  min-height: 2rem;
 }
 
 .nodra-editor-prose ul {
   list-style: none;
   padding-left: 0;
-  margin: 0.15rem 0;
+  margin: 0.1rem 0;
 }
 
 .nodra-editor-prose li {
   position: relative;
-  padding-left: 1.25rem;
-  margin: 0.15rem 0;
+  padding-left: 1.35rem;
+  margin: 0.12rem 0;
 }
 
 .nodra-editor-prose li::before {
   content: "";
   position: absolute;
-  left: 0.35rem;
-  top: 0.65em;
+  left: 0.4rem;
+  top: 0.72em;
   width: 5px;
   height: 5px;
   border-radius: 999px;
@@ -167,14 +218,14 @@ body {
 }
 
 .nodra-editor-prose li ul {
-  margin-left: 0.75rem;
+  margin-left: 0.5rem;
   border-left: 1px solid var(--nodra-border);
-  padding-left: 0.5rem;
+  padding-left: 0.65rem;
 }
 
 .nodra-page-ref,
 .nodra-editor-prose .nodra-page-ref {
-  color: var(--nodra-accent);
+  color: var(--nodra-link);
   cursor: pointer;
 }
 
@@ -185,7 +236,7 @@ body {
 .nodra-property {
   font-size: 0.875rem;
   color: var(--nodra-muted);
-  margin: 0.15rem 0 0.35rem;
+  margin: 0.1rem 0 0.3rem;
 }
 
 .nodra-property-key {
@@ -204,6 +255,10 @@ body {
   max-width: 100%;
   border-radius: 6px;
   margin: 0.5rem 0;
+}
+
+.nodra-editor-prose p.is-editor-empty:first-child::before {
+  color: var(--nodra-muted);
 }
 
 .nodra-graph {

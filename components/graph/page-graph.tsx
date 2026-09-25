@@ -71,7 +71,7 @@ export function PageGraph() {
       if (d.type === "journal") {
         router.push(`/journal/${d.slug}`);
       } else {
-        router.push(`/page/${d.slug}`);
+        router.push(`/pages/${d.slug}`);
       }
     },
     [router],

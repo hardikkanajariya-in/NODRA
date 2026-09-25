@@ -126,7 +126,7 @@ async function navigateToPage(
   const slug = pageSlugFromName(name);
   const res = await fetch(`/api/pages/by-slug/${encodeURIComponent(slug)}`);
   if (res.ok) {
-    router.push(`/page/${slug}`);
+    router.push(`/pages/${slug}`);
     return;
   }
 
@@ -137,6 +137,6 @@ async function navigateToPage(
   });
   if (create.ok) {
     const page = (await create.json()) as { slug: string };
-    router.push(`/page/${page.slug}`);
+    router.push(`/pages/${page.slug}`);
   }
 }

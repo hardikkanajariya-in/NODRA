@@ -1,34 +1,37 @@
-import Link from "next/link";
-import { listJournals } from "@/lib/pages/service";
+import { getJournalFeed } from "@/lib/pages/service";
+import { getErrorMessage } from "@/lib/pages/document";
+import { ConnectionError } from "@/components/errors/connection-error";
+import { PageEditor } from "@/components/editor/page-editor";
 
-export default async function JournalListPage() {
-  let journals: Awaited<ReturnType<typeof listJournals>> = [];
+export const dynamic = "force-dynamic";
+
+export default async function JournalFeedPage() {
   try {
-    journals = await listJournals(60);
-  } catch {
-    journals = [];
-  }
+    const entries = await getJournalFeed(14);
 
-  return (
-    <div className="nodra-content mx-auto max-w-3xl p-6">
-      <h1 className="nodra-page-title mb-4">Journals</h1>
-      <ul className="space-y-1">
-        {journals.map((j) => (
-          <li key={j.id}>
-            <Link
-              href={`/journal/${j.slug}`}
-              className="nodra-page-ref text-base"
-            >
-              {j.name}
-            </Link>
-          </li>
+    return (
+      <div className="nodra-journal-feed mx-auto max-w-3xl px-8 py-6">
+        {entries.map((entry, index) => (
+          <section
+            key={entry.id}
+            id={`journal-${entry.slug}`}
+            className="nodra-journal-section"
+          >
+            <h2 className="nodra-journal-date">{entry.name}</h2>
+            <PageEditor
+              pageId={entry.id}
+              initialContent={
+                entry.document!.contentJson as Record<string, unknown>
+              }
+            />
+            {index < entries.length - 1 && (
+              <hr className="nodra-journal-divider" />
+            )}
+          </section>
         ))}
-      </ul>
-      {journals.length === 0 && (
-        <p className="text-sm text-[var(--nodra-muted)]">
-          Open Today from the sidebar to start your first journal.
-        </p>
-      )}
-    </div>
-  );
+      </div>
+    );
+  } catch (error) {
+    return <ConnectionError message={getErrorMessage(error)} />;
+  }
 }
