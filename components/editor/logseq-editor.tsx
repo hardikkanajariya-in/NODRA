@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { normalizeDocToBullets } from "@/lib/editor/default-doc";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -13,6 +14,7 @@ import { BlockReference, BlockEmbed } from "./extensions/block-reference";
 import { PropertyBlock } from "./extensions/property-block";
 import { AssetImage } from "./extensions/asset-image";
 import { LogseqListItem } from "./extensions/logseq-list-item";
+import { LogseqOutline } from "./extensions/logseq-outline";
 import { handleLogseqPaste, uploadFileToEditor } from "./paste-handler";
 import { pageSlugFromName } from "@/lib/utils/slug";
 import { useAppActivity } from "@/components/shell/app-activity-context";
@@ -71,6 +73,11 @@ export function LogseqEditor({
 
   const editorRef = useRef<ReturnType<typeof useEditor>>(null);
 
+  const documentContent = useMemo(
+    () => normalizeDocToBullets(initialContent),
+    [initialContent],
+  );
+
   const proseClass =
     variant === "journal"
       ? "nodra-editor-prose nodra-editor-journal focus:outline-none"
@@ -101,8 +108,9 @@ export function LogseqEditor({
       BlockEmbed,
       PropertyBlock,
       AssetImage,
+      LogseqOutline,
     ],
-    content: initialContent,
+    content: documentContent,
     editorProps: {
       attributes: {
         class: proseClass,

@@ -2,10 +2,9 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { documents } from "@/lib/db/schema";
 
-export const emptyDoc = {
-  type: "doc",
-  content: [{ type: "paragraph" }],
-};
+import { emptyLogseqDoc } from "@/lib/editor/default-doc";
+
+export const emptyDoc = emptyLogseqDoc;
 
 export async function ensureDocument(pageId: string) {
   const existing = await db.query.documents.findFirst({

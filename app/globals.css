@@ -540,7 +540,11 @@ body {
   margin-left: -0.25rem;
 }
 
-.nodra-editor-prose p.is-editor-empty:first-child::before {
+.nodra-editor-prose p.is-editor-empty:first-child::before,
+.nodra-editor-prose
+  ul:not([data-type="taskList"])
+  > li
+  > p.is-editor-empty:first-child::before {
   color: var(--nodra-muted);
 }
 

@@ -99,7 +99,15 @@ export function blockForestToTiptap(forest: BlockForest): PMNode {
   flushBullets();
 
   if (!content.length) {
-    content.push({ type: "paragraph" });
+    content.push({
+      type: "bulletList",
+      content: [
+        {
+          type: "listItem",
+          content: [{ type: "paragraph" }],
+        },
+      ],
+    });
   }
 
   return { type: "doc", content };
