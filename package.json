@@ -2,6 +2,7 @@
   "name": "nodra",
   "version": "0.1.0",
   "private": false,
+  "packageManager": "pnpm@10.12.1",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -10,7 +11,8 @@
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "build:website": "pnpm --filter nodra-website build"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1141.0",

@@ -12,17 +12,17 @@ Thanks for helping improve NODRA.
 ```bash
 git clone https://github.com/hardikkanajariya-in/NODRA.git
 cd NODRA
-npm install
+pnpm install
 cp .env.example .env.local
-npm run db:push
-npm run dev
+pnpm db:push
+pnpm dev
 ```
 
 ## Pull requests
 
 1. Fork the repository and create a branch from `main`.
 2. Keep changes focused; match existing TypeScript and file layout.
-3. Run `npm run lint` and `npm test` before opening the PR.
+3. Run `pnpm lint` and `pnpm test` before opening the PR.
 4. Describe what changed and how you tested it.
 
 ## Code style

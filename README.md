@@ -26,6 +26,7 @@ Next.js, TypeScript, Tiptap, Neon PostgreSQL, Drizzle ORM, Cloudflare R2, Tailwi
 ### Requirements
 
 - Node.js 20+
+- [pnpm](https://pnpm.io/installation) 10+
 - PostgreSQL (Neon or any compatible host)
 - Cloudflare R2 bucket (optional; required for image uploads)
 
@@ -34,20 +35,20 @@ Next.js, TypeScript, Tiptap, Neon PostgreSQL, Drizzle ORM, Cloudflare R2, Tailwi
 ```bash
 git clone https://github.com/hardikkanajariya-in/NODRA.git
 cd NODRA
-npm install
+pnpm install
 cp .env.example .env.local
 ```
 
 Edit `.env.local` with your values, then apply the schema:
 
 ```bash
-npm run db:push
+pnpm db:push
 ```
 
 Run locally:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) and sign in with `APP_PASSWORD`.
@@ -64,15 +65,15 @@ Open [http://localhost:3000](http://localhost:3000) and sign in with `APP_PASSWO
 
 ### Database migrations
 
-SQL migrations live in [`drizzle/`](drizzle/). For a fresh database you can use `npm run db:push` or run `drizzle/0000_initial.sql` against your instance.
+SQL migrations live in [`drizzle/`](drizzle/). For a fresh database you can use `pnpm db:push` or run `drizzle/0000_initial.sql` against your instance.
 
 ### Production
 
 Deploy as a standard Next.js application. Set the environment variables in your host, run migrations, then build:
 
 ```bash
-npm run build
-npm run start
+pnpm build
+pnpm start
 ```
 
 A `vercel.json` is included for hosts that support it.
@@ -80,9 +81,9 @@ A `vercel.json` is included for hosts that support it.
 ## Development
 
 ```bash
-npm run dev
-npm run lint
-npm test
+pnpm dev
+pnpm lint
+pnpm test
 ```
 
 ## License

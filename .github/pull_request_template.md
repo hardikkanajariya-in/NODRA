@@ -4,8 +4,8 @@ What does this PR change?
 
 ## Testing
 
-- [ ] `npm run lint`
-- [ ] `npm test`
+- [ ] `pnpm lint`
+- [ ] `pnpm test`
 - [ ] Manual check (describe):
 
 ## User-facing

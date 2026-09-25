@@ -6,6 +6,7 @@ on:
     paths:
       - "website/**"
       - ".github/workflows/pages.yml"
+      - "pnpm-lock.yaml"
   workflow_dispatch:
 
 permissions:
@@ -25,17 +26,15 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: npm
-          cache-dependency-path: website/package-lock.json
-      - name: Install website dependencies
-        working-directory: website
-        run: npm ci
-      - name: Build website
-        working-directory: website
-        run: npm run build
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter nodra-website build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
