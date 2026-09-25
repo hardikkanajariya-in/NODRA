@@ -8,6 +8,7 @@ import {
   extractPlainTextFromTiptap,
 } from "@/lib/links/extract";
 import { emptyDoc, ensureDocument } from "@/lib/pages/document";
+import { journalDocumentHasContent } from "@/lib/editor/doc-content";
 
 export async function listPages(graphId: string) {
   return db.query.pages.findMany({
@@ -91,19 +92,33 @@ export async function getOrCreateJournal(graphId: string, dateStr: string) {
   return page;
 }
 
-export async function getJournalFeed(graphId: string, dayCount = 14) {
-  const dates: string[] = [];
-  const now = new Date();
-  for (let i = 0; i < dayCount; i++) {
-    const d = new Date(now);
-    d.setDate(now.getDate() - i);
-    dates.push(format(d, "yyyy-MM-dd"));
-  }
+export async function getJournalFeed(graphId: string, fetchLimit = 60) {
+  const today = format(new Date(), "yyyy-MM-dd");
+  const todayPage = await getOrCreateJournal(graphId, today);
 
-  const entries = await Promise.all(
-    dates.map((d) => getOrCreateJournal(graphId, d)),
-  );
-  return entries;
+  const rows = await db.query.pages.findMany({
+    where: and(eq(pages.graphId, graphId), eq(pages.type, "journal")),
+    orderBy: [desc(pages.journalDate)],
+    limit: fetchLimit,
+    with: { document: true },
+  });
+
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  byId.set(todayPage.id, todayPage);
+
+  const visible = [...byId.values()].filter((page) => {
+    if (page.journalDate === today) return true;
+    const doc = page.document?.contentJson as Record<string, unknown> | undefined;
+    return doc ? journalDocumentHasContent(doc) : false;
+  });
+
+  visible.sort((a, b) => {
+    const da = a.journalDate ?? "";
+    const db = b.journalDate ?? "";
+    return db.localeCompare(da);
+  });
+
+  return visible;
 }
 
 export async function updatePageName(id: string, name: string) {

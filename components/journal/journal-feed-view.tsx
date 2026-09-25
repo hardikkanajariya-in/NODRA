@@ -24,7 +24,7 @@ export function JournalFeedView({ entries }: Props) {
   }, [entries]);
 
   return (
-    <div className="nodra-journal-feed mx-auto max-w-3xl px-6 py-4 md:px-10">
+    <div className="nodra-journal-feed nodra-journal-feed--scroll mx-auto max-w-3xl px-6 py-3 md:px-10">
       {entries.map((entry, index) => (
         <section
           key={entry.id}

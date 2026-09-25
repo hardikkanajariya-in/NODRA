@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { ClientNavLink } from "./client-nav-link";
 import { usePathname, useRouter } from "next/navigation";
-import { CalendarDays, FileText, GitBranch, Plus, Search } from "lucide-react";
+import {
+  CalendarDays,
+  GitBranch,
+  Menu,
+  Plus,
+  Search,
+} from "lucide-react";
 import { format } from "date-fns";
 import { useMemo, useState } from "react";
 import { GraphSwitcher, type GraphSummary } from "./graph-switcher";
@@ -22,6 +28,7 @@ type Props = {
   onSearchChange: (v: string) => void;
   open: boolean;
   onClose: () => void;
+  onMenuClick?: () => void;
 };
 
 export function LogseqSidebar({
@@ -32,6 +39,7 @@ export function LogseqSidebar({
   onSearchChange,
   open,
   onClose,
+  onMenuClick,
 }: Props) {
   const pathname = usePathname();
   const router = useRouter();
@@ -43,11 +51,7 @@ export function LogseqSidebar({
     return pages.filter((p) => p.name.toLowerCase().includes(q));
   }, [pages, search]);
 
-  const recent = filtered.slice(0, 8);
-
   const today = format(new Date(), "yyyy-MM-dd");
-  const onPages =
-    pathname.startsWith("/page/") || pathname.startsWith("/pages/");
   const onGraph = pathname === "/graph";
 
   async function createPage() {
@@ -71,7 +75,9 @@ export function LogseqSidebar({
   }
 
   const navClass = (active: boolean) =>
-    `nodra-nav-item flex items-center gap-2 rounded-md px-2 py-1.5 text-sm ${active ? "active" : ""}`;
+    `nodra-nav-item flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] leading-tight ${
+      active ? "active" : ""
+    }`;
 
   return (
     <>
@@ -84,80 +90,81 @@ export function LogseqSidebar({
         />
       )}
       <aside
-        className={`nodra-sidebar flex h-full w-[270px] shrink-0 flex-col border-r ${open ? "open" : ""}`}
+        className={`nodra-sidebar hidden h-full w-[var(--nodra-sidebar-w)] shrink-0 flex-col border-r md:flex ${open ? "open" : ""}`}
       >
+        <div className="nodra-sidebar-brand flex h-11 shrink-0 items-center gap-2 border-b border-[var(--nodra-border)] px-3">
+          <button
+            type="button"
+            className="nodra-icon-btn md:hidden"
+            onClick={onMenuClick}
+            aria-label="Toggle sidebar"
+          >
+            <Menu size={18} />
+          </button>
+          <Link href="/journal" className="nodra-brand flex min-w-0 items-center gap-2">
+            <span className="nodra-brand-mark" aria-hidden />
+            <span className="truncate text-sm font-semibold tracking-tight">
+              NODRA
+            </span>
+          </Link>
+        </div>
+
         <GraphSwitcher graphs={graphs} activeGraph={activeGraph} />
 
-        <div className="px-3 py-2">
-          <div className="nodra-search-wrap flex items-center gap-2 rounded-md px-2 py-1.5">
-            <Search size={15} className="text-[var(--nodra-muted)]" />
+        <div className="px-3 py-2.5">
+          <div className="nodra-search-wrap flex items-center gap-2 rounded-lg px-2.5 py-2">
+            <Search size={15} className="shrink-0 text-[var(--nodra-muted)]" />
             <input
               type="search"
-              placeholder="Search"
+              placeholder="Search pages…"
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="nodra-search-input w-full bg-transparent text-sm outline-none"
+              className="nodra-search-input w-full bg-transparent text-[13px] outline-none placeholder:text-[var(--nodra-muted)]"
             />
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-2 pb-3">
-          <p className="nodra-sidebar-label px-2 pt-1">Navigation</p>
-          <nav className="space-y-0.5 px-1">
+        <div className="nodra-sidebar-scroll flex-1 overflow-y-auto px-2 pb-2">
+          <p className="nodra-sidebar-label px-2.5 pb-1">Journal</p>
+          <nav className="mb-1 space-y-0.5">
             <ClientNavLink
               href="/journal"
               className={navClass(pathname === "/journal")}
               onClick={onClose}
             >
-              <CalendarDays size={16} />
-              Journals
+              <CalendarDays size={16} className="shrink-0 opacity-80" />
+              All journals
             </ClientNavLink>
             <ClientNavLink
               href={`/journal/${today}`}
-              className={navClass(pathname === `/journal/${today}`)}
+              className={`${navClass(pathname === `/journal/${today}`)} nodra-nav-nested`}
               onClick={onClose}
             >
-              <span className="pl-6 text-[var(--nodra-muted)]">Today</span>
+              Today
             </ClientNavLink>
-            <ClientNavLink
-              href={recent[0] ? `/pages/${recent[0].slug}` : "/journal"}
-              className={navClass(onPages)}
-              onClick={onClose}
-            >
-              <FileText size={16} />
-              Pages
-            </ClientNavLink>
+          </nav>
+
+          <p className="nodra-sidebar-label mt-3 px-2.5 pb-1">Explore</p>
+          <nav className="mb-1 space-y-0.5">
             <ClientNavLink
               href="/graph"
               className={navClass(onGraph)}
               onClick={onClose}
             >
-              <GitBranch size={16} />
+              <GitBranch size={16} className="shrink-0 opacity-80" />
               Graph view
             </ClientNavLink>
           </nav>
 
-          <p className="nodra-sidebar-label mt-4 px-2">Recent</p>
-          <div className="space-y-0.5 px-1">
-            {recent.map((p) => (
-              <ClientNavLink
-                key={p.id}
-                href={`/pages/${p.slug}`}
-                className={navClass(pathname === `/pages/${p.slug}`)}
-                onClick={onClose}
-              >
-                <span className="truncate">{p.name}</span>
-              </ClientNavLink>
-            ))}
-            {recent.length === 0 && (
-              <p className="px-2 py-1 text-xs text-[var(--nodra-muted)]">
-                No pages yet
-              </p>
+          <p className="nodra-sidebar-label mt-3 flex items-center justify-between px-2.5 pb-1">
+            <span>Pages</span>
+            {pages.length > 0 && (
+              <span className="normal-case tracking-normal text-[10px] font-medium text-[var(--nodra-muted)]">
+                {filtered.length}
+              </span>
             )}
-          </div>
-
-          <p className="nodra-sidebar-label mt-4 px-2">All pages</p>
-          <div className="max-h-48 space-y-0.5 overflow-y-auto px-1">
+          </p>
+          <div className="nodra-page-list space-y-0.5">
             {filtered.map((p) => (
               <ClientNavLink
                 key={p.id}
@@ -168,13 +175,18 @@ export function LogseqSidebar({
                 <span className="truncate">{p.name}</span>
               </ClientNavLink>
             ))}
+            {filtered.length === 0 && (
+              <p className="px-2.5 py-2 text-xs text-[var(--nodra-muted)]">
+                {search.trim() ? "No matches" : "No pages yet"}
+              </p>
+            )}
           </div>
         </div>
 
-        <div className="border-t border-[var(--nodra-border)] p-2">
+        <div className="nodra-sidebar-footer shrink-0 border-t border-[var(--nodra-border)] p-2.5">
           <button
             type="button"
-            className="nodra-nav-item flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm"
+            className="nodra-new-page-btn flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium"
             onClick={createPage}
             disabled={creating}
           >

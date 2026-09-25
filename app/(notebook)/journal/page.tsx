@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function JournalFeedPage() {
   try {
     const graphId = await getActiveGraphId();
-    const entries = await getJournalFeed(graphId, 21);
+    const entries = await getJournalFeed(graphId);
 
     return (
       <JournalFeedView

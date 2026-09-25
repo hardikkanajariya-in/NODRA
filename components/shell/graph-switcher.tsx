@@ -65,41 +65,46 @@ export function GraphSwitcher({ graphs, activeGraph }: Props) {
   const others = graphs.filter((g) => g.id !== activeGraph.id);
 
   return (
-    <div className="relative border-b border-[var(--nodra-border)] px-3 py-2" ref={ref}>
+    <div className="relative px-3 py-2.5" ref={ref}>
       <button
         type="button"
-        className="nodra-graph-trigger flex w-full items-center justify-between rounded-md px-1 py-1.5 text-left"
+        className="nodra-graph-trigger flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left"
         onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
       >
-        <span className="truncate font-semibold text-sm">{activeGraph.name}</span>
+        <span className="nodra-graph-dot shrink-0" aria-hidden />
+        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">
+          {activeGraph.name}
+        </span>
         <ChevronDown
-          size={16}
-          className={`shrink-0 text-[var(--nodra-muted)] transition ${open ? "rotate-180" : ""}`}
+          size={15}
+          className={`shrink-0 text-[var(--nodra-muted)] transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
 
       {open && (
-        <div className="nodra-graph-menu absolute left-2 right-2 top-full z-50 mt-1 rounded-lg border py-1 shadow-lg">
+        <div className="nodra-graph-menu absolute left-3 right-3 top-[calc(100%-4px)] z-50 rounded-lg border py-1 shadow-lg">
           {others.length > 0 && (
             <>
-              <p className="px-3 py-1.5 text-xs font-medium text-[var(--nodra-muted)]">
-                Switch to:
+              <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--nodra-muted)]">
+                Switch graph
               </p>
               {others.map((g) => (
                 <button
                   key={g.id}
                   type="button"
-                  className="nodra-graph-menu-item block w-full px-3 py-1.5 text-left text-sm"
+                  className="nodra-graph-menu-item block w-full px-3 py-2 text-left text-[13px]"
                   onClick={() => switchTo(g.id)}
                 >
                   {g.name}
                 </button>
               ))}
+              <div className="nodra-graph-menu-divider" />
             </>
           )}
           <button
             type="button"
-            className="nodra-graph-menu-item flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm"
+            className="nodra-graph-menu-item flex w-full items-center gap-2 px-3 py-2 text-left text-[13px]"
             onClick={createGraph}
             disabled={creating}
           >
@@ -108,15 +113,15 @@ export function GraphSwitcher({ graphs, activeGraph }: Props) {
           </button>
           <Link
             href="/graphs"
-            className="nodra-graph-menu-item flex items-center gap-2 px-3 py-1.5 text-sm"
+            className="nodra-graph-menu-item flex items-center gap-2 px-3 py-2 text-[13px]"
             onClick={() => setOpen(false)}
           >
             <LayoutGrid size={14} />
             All graphs
           </Link>
-          <span className="nodra-graph-menu-item flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--nodra-muted)]">
+          <span className="nodra-graph-menu-item flex items-center gap-2 px-3 py-2 text-[13px] text-[var(--nodra-muted)]">
             <Database size={14} />
-            Import (coming soon)
+            Import (soon)
           </span>
         </div>
       )}

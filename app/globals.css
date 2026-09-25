@@ -2,7 +2,8 @@
 
 :root,
 [data-theme="light"] {
-  --nodra-toolbar-h: 2.5rem;
+  --nodra-toolbar-h: 2.75rem;
+  --nodra-sidebar-w: 15.5rem;
   --nodra-bg: #f7f7f7;
   --nodra-main: #ffffff;
   --nodra-sidebar: #f3f3f3;
@@ -46,6 +47,10 @@ body {
   color: var(--nodra-fg);
 }
 
+.nodra-main-column {
+  background: var(--nodra-main);
+}
+
 .nodra-sidebar {
   background: var(--nodra-sidebar);
   border-color: var(--nodra-border);
@@ -59,35 +64,120 @@ body {
   background: var(--nodra-main);
 }
 
+.nodra-toolbar-title {
+  color: var(--nodra-fg);
+}
+
+.nodra-brand {
+  color: var(--nodra-fg);
+  text-decoration: none;
+}
+
+.nodra-brand:hover {
+  color: var(--nodra-link);
+}
+
+.nodra-brand-mark {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--nodra-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--nodra-accent) 25%, transparent);
+}
+
+.nodra-graph-trigger {
+  background: var(--nodra-main);
+  border: 1px solid var(--nodra-border);
+  color: var(--nodra-fg);
+}
+
+.nodra-graph-trigger:hover {
+  border-color: color-mix(in srgb, var(--nodra-accent) 35%, var(--nodra-border));
+}
+
+.nodra-graph-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--nodra-accent);
+}
+
+.nodra-graph-menu {
+  background: var(--nodra-main);
+  border-color: var(--nodra-border);
+}
+
+.nodra-graph-menu-item {
+  color: var(--nodra-fg);
+}
+
+.nodra-graph-menu-item:hover {
+  background: var(--nodra-nav-active);
+}
+
+.nodra-graph-menu-divider {
+  height: 1px;
+  margin: 0.25rem 0.5rem;
+  background: var(--nodra-border);
+}
+
+.nodra-new-page-btn {
+  background: var(--nodra-accent);
+  color: #fff;
+}
+
+.nodra-new-page-btn:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.nodra-new-page-btn:disabled {
+  opacity: 0.6;
+}
+
+.nodra-nav-nested {
+  margin-left: 1.35rem;
+  padding-left: 0.65rem !important;
+  border-left: 2px solid var(--nodra-border);
+}
+
+.nodra-page-list {
+  max-height: min(40vh, 16rem);
+  overflow-y: auto;
+}
+
 @media (max-width: 767px) {
   .nodra-sidebar {
     position: fixed;
     z-index: 40;
-    top: var(--nodra-toolbar-h);
+    top: 0;
     bottom: 0;
     left: 0;
     transform: translateX(-100%);
     transition: transform 0.2s ease;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
   }
   .nodra-sidebar.open {
+    display: flex;
     transform: translateX(0);
   }
   .nodra-sidebar-backdrop {
     position: fixed;
-    top: var(--nodra-toolbar-h);
-    right: 0;
-    bottom: 0;
-    left: 0;
+    inset: 0;
     z-index: 30;
-    background: rgba(0, 0, 0, 0.35);
+    background: rgba(0, 0, 0, 0.4);
+  }
+}
+
+@media (min-width: 768px) {
+  .nodra-sidebar {
+    display: flex;
   }
 }
 
 .nodra-sidebar-label {
-  font-size: 0.68rem;
+  font-size: 0.625rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--nodra-muted);
 }
@@ -101,11 +191,17 @@ body {
 .nodra-nav-item.active {
   background: var(--nodra-nav-active);
   font-weight: 500;
+  box-shadow: inset 3px 0 0 var(--nodra-accent);
 }
 
 .nodra-search-wrap {
   background: var(--nodra-main);
   border: 1px solid var(--nodra-border);
+}
+
+.nodra-search-wrap:focus-within {
+  border-color: color-mix(in srgb, var(--nodra-accent) 45%, var(--nodra-border));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--nodra-accent) 12%, transparent);
 }
 
 .nodra-search-input {
@@ -149,17 +245,47 @@ body {
 }
 
 .nodra-journal-section {
-  padding: 0.5rem 0 1.5rem;
+  padding: 0.15rem 0 0.35rem;
 }
 
 .nodra-journal-divider {
   border: none;
   border-top: 1px solid var(--nodra-border);
-  margin: 2rem 0;
+  margin: 0.65rem 0 0.35rem;
 }
 
 .nodra-journal-feed {
-  padding-bottom: 4rem;
+  padding-bottom: 2rem;
+}
+
+.nodra-journal-feed--scroll .nodra-journal-date {
+  font-size: 1.375rem;
+  margin: 0.75rem 0 0.15rem;
+  padding: 0.35rem 0;
+}
+
+.nodra-journal-feed--scroll .nodra-journal-section:first-child .nodra-journal-date {
+  margin-top: 0;
+}
+
+.nodra-journal-feed--scroll .nodra-editor-wrap {
+  margin: 0;
+}
+
+.nodra-journal-feed--scroll .nodra-editor-journal {
+  min-height: 0;
+}
+
+.nodra-journal-feed--scroll .nodra-editor-prose ul:not([data-type="taskList"]) > li {
+  padding: 0.05rem 0 0.05rem 1.35rem;
+}
+
+.nodra-journal-feed--scroll .nodra-editor-prose p {
+  min-height: 1.35em;
+}
+
+.nodra-journal-feed--scroll .nodra-asset-image {
+  margin: 0.2rem 0 0.35rem;
 }
 
 .nodra-login {
@@ -601,17 +727,4 @@ body {
 
 .nodra-graph-journal {
   border-color: var(--nodra-accent);
-}
-
-.nodra-graph-trigger:hover {
-  background: var(--nodra-nav-active);
-}
-
-.nodra-graph-menu {
-  background: var(--nodra-main);
-  border-color: var(--nodra-border);
-}
-
-.nodra-graph-menu-item:hover {
-  background: var(--nodra-nav-active);
 }
