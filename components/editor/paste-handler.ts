@@ -10,6 +10,11 @@ import {
 } from "@/lib/logseq/paste-to-tiptap";
 import { uploadAssetFile } from "@/lib/assets/upload-client";
 import { clearUploadProgress } from "@/lib/assets/upload-progress";
+import {
+  listItemsFromPaste,
+  outlinePasteRange,
+  type JsonNode,
+} from "@/lib/editor/insert-outline-paste";
 import { insertImageNode } from "./insert-image";
 
 export type UploadHandlers = {
@@ -85,19 +90,27 @@ async function processPaste(
     return;
   }
 
-  let started = false;
+  let folderReady = false;
   try {
-    const folderReady =
-      (await ensureLogseqAssetPermission()) === "ready";
-    const prepared = await prepareLogseqPaste(clipboard, pool, {
+    folderReady = (await ensureLogseqAssetPermission()) === "ready";
+  } catch {
+    folderReady = false;
+  }
+
+  let prepared;
+  try {
+    prepared = await prepareLogseqPaste(clipboard, pool, {
       resolveLocalFile: folderReady ? resolveLocalAssetFile : undefined,
     });
-    editor.chain().focus().insertContent(prepared.content).run();
+  } catch {
+    return;
+  }
 
-    if (!prepared.jobs.length) return;
+  if (!insertPreparedContent(editor, prepared.content)) return;
+  if (!prepared.jobs.length) return;
 
-    started = true;
-    upload?.onUploadStart?.();
+  upload?.onUploadStart?.();
+  try {
     const total = prepared.jobs.length;
     const percents = new Array(total).fill(0);
 
@@ -122,17 +135,28 @@ async function processPaste(
           } else {
             markUploadFailed(editor, job.uploadId);
           }
+        } catch {
+          markUploadFailed(editor, job.uploadId);
         } finally {
           URL.revokeObjectURL(job.previewUrl);
           clearUploadProgress(job.uploadId);
         }
       }),
     );
-  } catch {
-    editor.chain().focus().insertContent({ type: "paragraph" }).run();
   } finally {
-    if (started) upload?.onUploadEnd?.();
+    upload?.onUploadEnd?.();
   }
+}
+
+function insertPreparedContent(editor: Editor, content: JsonNode[]): boolean {
+  const items = listItemsFromPaste(content);
+  const range = items
+    ? outlinePasteRange(editor.state.doc, editor.state.selection.from)
+    : null;
+  if (items && range) {
+    return editor.chain().focus().insertContentAt(range, items).run();
+  }
+  return editor.chain().focus().insertContent(content).run();
 }
 
 function replaceUploadedImage(

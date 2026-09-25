@@ -242,8 +242,8 @@ async function bulletsToList(
       }
     }
 
-    if (!listItemContent.length) {
-      listItemContent.push({ type: "paragraph" });
+    if (listItemContent[0]?.type !== "paragraph") {
+      listItemContent.unshift({ type: "paragraph" });
     }
 
     if (childList) listItemContent.push(childList);

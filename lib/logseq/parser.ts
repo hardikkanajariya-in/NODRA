@@ -1,7 +1,8 @@
 import type { BlockForest, BlockNode } from "./types";
 import { parseBulletContent } from "./bullet-content";
 
-const BULLET = /^([\t ]*)-\s+(.*)$/;
+/** `- content`, or a bare `-` / `- ` empty Logseq block. */
+const BULLET = /^([\t ]*)-(?:\s+(.*)|[ \t]*)$/;
 const PROPERTY = /^(\s*)([^:\s]+)::\s*(.+)$/;
 
 function indentDepth(indent: string): number {
@@ -42,7 +43,7 @@ export function parseLogseqMarkdown(input: string): BlockForest {
     }
 
     const depth = indentDepth(bulletMatch[1]);
-    const parsed = parseBulletContent(bulletMatch[2]);
+    const parsed = parseBulletContent(bulletMatch[2] ?? "");
     const node: BlockNode = {
       type: "bullet",
       depth,
