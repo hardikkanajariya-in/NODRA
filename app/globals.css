@@ -121,6 +121,38 @@ body {
   background: var(--nodra-border);
 }
 
+.nodra-editor-format-menu {
+  background: var(--nodra-main);
+  border-color: var(--nodra-border);
+}
+
+.nodra-editor-format-menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 6px;
+  color: var(--nodra-fg);
+  transition: background 0.12s ease;
+}
+
+.nodra-editor-format-menu-btn:hover {
+  background: var(--nodra-nav-active);
+}
+
+.nodra-editor-format-menu-btn[aria-pressed="true"] {
+  background: var(--nodra-nav-active);
+  color: var(--nodra-accent);
+}
+
+.nodra-editor-format-menu-divider {
+  width: 1px;
+  height: 1.25rem;
+  margin: 0 0.15rem;
+  background: var(--nodra-border);
+}
+
 .nodra-new-page-btn {
   background: var(--nodra-accent);
   color: #fff;

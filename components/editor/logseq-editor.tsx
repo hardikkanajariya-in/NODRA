@@ -18,6 +18,7 @@ import { LogseqOutline } from "./extensions/logseq-outline";
 import { handleLogseqPaste, uploadFileToEditor } from "./paste-handler";
 import { pageSlugFromName } from "@/lib/utils/slug";
 import { useAppActivity } from "@/components/shell/app-activity-context";
+import { EditorFormatContextMenu } from "./editor-format-context-menu";
 
 type Props = {
   pageId: string;
@@ -168,6 +169,7 @@ export function LogseqEditor({
   return (
     <div className="nodra-editor-wrap relative">
       <EditorContent editor={editor} />
+      <EditorFormatContextMenu editor={editor} />
     </div>
   );
 }

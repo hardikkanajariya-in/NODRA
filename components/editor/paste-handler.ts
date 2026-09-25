@@ -1,6 +1,10 @@
 import type { Editor } from "@tiptap/react";
 import { buildImagePool } from "@/lib/logseq/clipboard-images";
 import {
+  ensureLogseqAssetPermission,
+  resolveLocalAssetFile,
+} from "@/lib/logseq/local-asset-folder";
+import {
   prepareLogseqPaste,
   readClipboardStrings,
 } from "@/lib/logseq/paste-to-tiptap";
@@ -83,7 +87,11 @@ async function processPaste(
 
   let started = false;
   try {
-    const prepared = await prepareLogseqPaste(clipboard, pool);
+    const folderReady =
+      (await ensureLogseqAssetPermission()) === "ready";
+    const prepared = await prepareLogseqPaste(clipboard, pool, {
+      resolveLocalFile: folderReady ? resolveLocalAssetFile : undefined,
+    });
     editor.chain().focus().insertContent(prepared.content).run();
 
     if (!prepared.jobs.length) return;

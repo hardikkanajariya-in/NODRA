@@ -12,6 +12,7 @@ NODRA is a self-hosted block notebook: daily journals, wiki-style pages, and a p
 - Pages at `/pages/<slug>`
 - Nested block editor (Tab / Shift+Tab, Enter, autosave)
 - Logseq Markdown paste (plain text and HTML clipboard)
+- Optional link to your Logseq graph `assets/` folder (Chromium browsers) so pasted blocks can pull image files the clipboard omits
 - `[[Page references]]`, `#tags`, `key:: value` properties
 - Block references `((uuid))` and embed placeholders
 - Image paste and upload (Cloudflare R2)
@@ -51,6 +52,8 @@ pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) and sign in with `APP_PASSWORD`.
+
+If you paste from Logseq Desktop and images appear as filenames only, open **Settings** in the sidebar and link your graph’s `assets` folder (for example `%USERPROFILE%\logseq\graphs\<graph>\assets` on Windows). Folder access stays in your browser; use Chrome, Edge, or another Chromium-based browser for this feature.
 
 ### Environment variables
 

@@ -21,6 +21,7 @@ function headerTitle(pathname: string): string {
   }
   if (pathname === "/graph") return "Graph";
   if (pathname === "/graphs") return "Graphs";
+  if (pathname === "/settings") return "Settings";
   return "NODRA";
 }
 

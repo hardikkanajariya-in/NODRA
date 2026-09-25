@@ -22,6 +22,10 @@ export type PreparedPaste = {
   jobs: PendingAssetUpload[];
 };
 
+export type PrepareLogseqPasteOptions = {
+  resolveLocalFile?: (hint: string, url?: string) => Promise<File | null>;
+};
+
 export function readClipboardStrings(clipboard: DataTransfer): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
@@ -46,7 +50,9 @@ export function readClipboardStrings(clipboard: DataTransfer): string[] {
 export async function prepareLogseqPaste(
   clipboard: DataTransfer,
   pool: ImagePool,
+  options?: PrepareLogseqPasteOptions,
 ): Promise<PreparedPaste> {
+  const resolveLocalFile = options?.resolveLocalFile;
   const strings = readClipboardStrings(clipboard);
   const html = clipboard.getData("text/html");
   const text = clipboard.getData("text/plain");
@@ -100,6 +106,9 @@ export async function prepareLogseqPaste(
       htmlSrcIndex++;
       file =
         (await fileFromImageSrc(src, `${hint || "image"}.png`)) ?? undefined;
+    }
+    if (!file && resolveLocalFile) {
+      file = (await resolveLocalFile(hint, url)) ?? undefined;
     }
     if (!file) file = takeNextPoolImage(pool, usedFiles);
     if (!file) return null;

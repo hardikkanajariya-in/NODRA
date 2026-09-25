@@ -9,6 +9,7 @@ import {
   Menu,
   Plus,
   Search,
+  Settings,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useMemo, useState } from "react";
@@ -53,6 +54,7 @@ export function LogseqSidebar({
 
   const today = format(new Date(), "yyyy-MM-dd");
   const onGraph = pathname === "/graph";
+  const onSettings = pathname === "/settings";
 
   async function createPage() {
     const name = window.prompt("Page name");
@@ -153,6 +155,14 @@ export function LogseqSidebar({
             >
               <GitBranch size={16} className="shrink-0 opacity-80" />
               Graph view
+            </ClientNavLink>
+            <ClientNavLink
+              href="/settings"
+              className={navClass(onSettings)}
+              onClick={onClose}
+            >
+              <Settings size={16} className="shrink-0 opacity-80" />
+              Settings
             </ClientNavLink>
           </nav>
 

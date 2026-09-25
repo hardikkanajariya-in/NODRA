@@ -1,0 +1,176 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import {
+  ensureLogseqAssetPermission,
+  getLogseqAssetFolderStatus,
+  isBraveBrowser,
+  isLogseqAssetPickerSupported,
+  linkLogseqAssetsFolder,
+  readLogseqAssetsMeta,
+  unlinkLogseqAssetsFolder,
+  type LogseqAssetFolderStatus,
+} from "@/lib/logseq/local-asset-folder";
+
+export function LogseqAssetsLink() {
+  const [status, setStatus] = useState<LogseqAssetFolderStatus>("not_linked");
+  const [meta, setMeta] = useState(readLogseqAssetsMeta());
+  const [busy, setBusy] = useState(false);
+  const [braveNeedsFlag, setBraveNeedsFlag] = useState(false);
+  const supported = isLogseqAssetPickerSupported();
+
+  useEffect(() => {
+    void (async () => {
+      const nextMeta = readLogseqAssetsMeta();
+      const nextStatus = await getLogseqAssetFolderStatus();
+      setMeta(nextMeta);
+      setStatus(nextStatus);
+      if (!isLogseqAssetPickerSupported() && (await isBraveBrowser())) {
+        setBraveNeedsFlag(true);
+      }
+    })();
+  }, []);
+
+  async function onLink() {
+    setBusy(true);
+    try {
+      const next = await linkLogseqAssetsFolder();
+      setStatus(next);
+      setMeta(readLogseqAssetsMeta());
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onReauthorize() {
+    setBusy(true);
+    try {
+      const next = await ensureLogseqAssetPermission();
+      setStatus(next);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onUnlink() {
+    setBusy(true);
+    try {
+      await unlinkLogseqAssetsFolder();
+      setStatus("not_linked");
+      setMeta(null);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const linked = status === "ready";
+  const needsPermission = status === "denied";
+
+  return (
+    <section
+      className="rounded-md border border-[var(--nodra-border)] px-4 py-4"
+      aria-labelledby="logseq-assets-heading"
+    >
+      <h2
+        id="logseq-assets-heading"
+        className="text-sm font-semibold tracking-tight"
+      >
+        Logseq assets folder
+      </h2>
+      <p className="mt-2 text-sm text-[var(--nodra-muted)]">
+        When you paste from Logseq Desktop, images are referenced by filename
+        but not copied into the clipboard. Link your graph&apos;s{" "}
+        <code className="text-[12px]">assets</code> folder so NODRA can read
+        those files locally (nothing is uploaded except through normal image
+        paste).
+      </p>
+      <p className="mt-2 text-xs text-[var(--nodra-muted)]">
+        Typical path:{" "}
+        <code className="text-[11px]">
+          %USERPROFILE%\logseq\graphs\&lt;graph&gt;\assets
+        </code>
+      </p>
+
+      {!supported && braveNeedsFlag && (
+        <div className="mt-3 text-sm text-amber-600 dark:text-amber-400">
+          <p>
+            Brave uses Chromium, but it turns off the folder picker API by
+            default. Enable{" "}
+            <code className="text-[12px]">brave://flags/#file-system-access-api</code>
+            , set it to <strong>Enabled</strong>, then relaunch Brave and reload
+            this page.
+          </p>
+          <p className="mt-2 text-xs text-[var(--nodra-muted)]">
+            Until then, use Chrome or Edge for folder linking, or paste images
+            that include file data in the clipboard.
+          </p>
+        </div>
+      )}
+      {!supported && !braveNeedsFlag && (
+        <p className="mt-3 text-sm text-amber-600 dark:text-amber-400">
+          Folder linking needs a browser that exposes{" "}
+          <code className="text-[12px]">showDirectoryPicker</code> (Chrome,
+          Edge, or Brave with the File System Access flag). Text paste still
+          works elsewhere.
+        </p>
+      )}
+
+      {supported && (
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          {linked && meta && (
+            <span className="text-sm text-[var(--nodra-muted)]">
+              Linked: <span className="font-medium text-[var(--nodra-fg)]">{meta.name}</span>
+            </span>
+          )}
+          {!linked && !needsPermission && (
+            <button
+              type="button"
+              className="nodra-new-page-btn rounded-lg px-3 py-2 text-[13px] font-medium"
+              onClick={() => void onLink()}
+              disabled={busy}
+            >
+              Link assets folder
+            </button>
+          )}
+          {(linked || needsPermission) && (
+            <>
+              <button
+                type="button"
+                className="rounded-lg border border-[var(--nodra-border)] px-3 py-2 text-[13px] font-medium"
+                onClick={() => void onLink()}
+                disabled={busy}
+              >
+                Change folder
+              </button>
+              {needsPermission && (
+                <button
+                  type="button"
+                  className="nodra-new-page-btn rounded-lg px-3 py-2 text-[13px] font-medium"
+                  onClick={() => void onReauthorize()}
+                  disabled={busy}
+                >
+                  Allow access
+                </button>
+              )}
+              <button
+                type="button"
+                className="rounded-lg px-3 py-2 text-[13px] text-[var(--nodra-muted)] hover:text-[var(--nodra-fg)]"
+                onClick={() => void onUnlink()}
+                disabled={busy}
+              >
+                Unlink
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {supported && needsPermission && (
+        <p className="mt-2 text-xs text-[var(--nodra-muted)]">
+          Access was revoked or expired. Click &quot;Allow access&quot; or choose
+          the folder again.
+        </p>
+      )}
+    </section>
+  );
+}
