@@ -1,0 +1,46 @@
+import { NextResponse } from "next/server";
+import { randomUUID } from "crypto";
+import { db } from "@/lib/db/client";
+import { assets } from "@/lib/db/schema";
+import { isR2Configured, uploadToR2 } from "@/lib/assets/r2";
+
+export async function POST(request: Request) {
+  if (!isR2Configured()) {
+    return NextResponse.json(
+      { error: "Asset storage is not configured" },
+      { status: 503 },
+    );
+  }
+
+  const form = await request.formData();
+  const file = form.get("file");
+  const pageId = form.get("pageId");
+
+  if (!(file instanceof File) || typeof pageId !== "string") {
+    return NextResponse.json({ error: "Invalid upload" }, { status: 400 });
+  }
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const ext = file.name.split(".").pop() ?? "bin";
+  const id = randomUUID();
+  const storageKey = `assets/${id}.${ext}`;
+
+  await uploadToR2(storageKey, buffer, file.type || "application/octet-stream");
+
+  const [row] = await db
+    .insert(assets)
+    .values({
+      id,
+      pageId,
+      storageKey,
+      originalName: file.name,
+      mimeType: file.type || "application/octet-stream",
+      size: buffer.length,
+    })
+    .returning();
+
+  return NextResponse.json({
+    id: row.id,
+    url: `/api/assets/${row.id}`,
+  });
+}

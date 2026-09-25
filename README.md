@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NODRA
 
-## Getting Started
+NODRA is a self-hosted block notebook: daily journals, wiki-style pages, and a page graph. The editor understands Logseq-style nested bullets, `[[page links]]`, tags, properties, and paste from Logseq.
 
-First, run the development server:
+- **Site:** [hardikkanajariya-in.github.io/NODRA](https://hardikkanajariya-in.github.io/NODRA/)
+- **Repository:** [github.com/hardikkanajariya-in/NODRA](https://github.com/hardikkanajariya-in/NODRA)
+
+## Features
+
+- Password-protected single-user access (password from environment variables)
+- Daily journals at `/journal/YYYY-MM-DD`
+- Pages at `/page/<slug>`
+- Nested block editor (Tab / Shift+Tab, Enter, autosave)
+- Logseq Markdown paste (plain text and HTML clipboard)
+- `[[Page references]]`, `#tags`, `key:: value` properties
+- Block references `((uuid))` and embed placeholders
+- Image paste and upload (Cloudflare R2)
+- Page graph with pan, zoom, and search
+
+## Stack
+
+Next.js, TypeScript, Tiptap, Neon PostgreSQL, Drizzle ORM, Cloudflare R2, Tailwind CSS.
+
+## Self-hosting
+
+### Requirements
+
+- Node.js 20+
+- PostgreSQL (Neon or any compatible host)
+- Cloudflare R2 bucket (optional; required for image uploads)
+
+### Setup
+
+```bash
+git clone https://github.com/hardikkanajariya-in/NODRA.git
+cd NODRA
+npm install
+cp .env.example .env.local
+```
+
+Edit `.env.local` with your values, then apply the schema:
+
+```bash
+npm run db:push
+```
+
+Run locally:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) and sign in with `APP_PASSWORD`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Purpose |
+|----------|---------|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `APP_PASSWORD` | Login password (not stored in the database) |
+| `SESSION_SECRET` | Signs the session cookie |
+| `R2_*` | Cloudflare R2 credentials for assets |
+| `NEXT_PUBLIC_APP_URL` | Public URL of your deployment |
 
-## Learn More
+### Database migrations
 
-To learn more about Next.js, take a look at the following resources:
+SQL migrations live in [`drizzle/`](drizzle/). For a fresh database you can use `npm run db:push` or run `drizzle/0000_initial.sql` against your instance.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Production
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Deploy as a standard Next.js application. Set the environment variables in your host, run migrations, then build:
 
-## Deploy on Vercel
+```bash
+npm run build
+npm run start
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+A `vercel.json` is included for hosts that support it.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Development
+
+```bash
+npm run dev
+npm run lint
+npm test
+```
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+## Security
+
+Report vulnerabilities via [GitHub Security Advisories](https://github.com/hardikkanajariya-in/NODRA/security/advisories) or contact@hardikkanajariya.in. See [SECURITY.md](SECURITY.md).

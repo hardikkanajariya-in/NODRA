@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NODRA — block notebook</title>
+    <meta
+      name="description"
+      content="Self-hosted block notebook with journals, pages, and a page graph. Logseq-friendly paste."
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="wrap header-inner">
+        <a class="brand" href="./">NODRA</a>
+        <nav>
+          <a href="#features">Features</a>
+          <a href="#self-host">Self-host</a>
+          <a href="https://github.com/hardikkanajariya-in/NODRA">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero wrap">
+        <p class="eyebrow">Open source</p>
+        <h1>Your notes, blocks, and links — online and under your control.</h1>
+        <p class="lead">
+          NODRA is a block notebook for daily journals, connected pages, and a
+          visual graph. Paste from Logseq and keep writing in nested bullets,
+          page references, and properties.
+        </p>
+        <div class="cta-row">
+          <a class="btn primary" href="https://github.com/hardikkanajariya-in/NODRA"
+            >View on GitHub</a
+          >
+          <a class="btn" href="#self-host">Self-hosting guide</a>
+        </div>
+      </section>
+
+      <section id="features" class="wrap features">
+        <h2>Built for how you already write</h2>
+        <div class="grid">
+          <article>
+            <h3>Journals</h3>
+            <p>One page per day. Open today, yesterday, or any date in the sidebar.</p>
+          </article>
+          <article>
+            <h3>Pages</h3>
+            <p>Wiki-style pages with <code>[[links]]</code> that build your graph as you save.</p>
+          </article>
+          <article>
+            <h3>Logseq paste</h3>
+            <p>Nested bullets, tags, and properties from Logseq Markdown land in the editor.</p>
+          </article>
+          <article>
+            <h3>Graph</h3>
+            <p>See how journals and pages connect. Click a node to open it.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="self-host" class="wrap self-host">
+        <h2>Self-hosting</h2>
+        <p>
+          NODRA runs as a Next.js app with PostgreSQL. You set a single access
+          password in the environment — no user database required.
+        </p>
+        <pre><code>git clone https://github.com/hardikkanajariya-in/NODRA.git
+cd NODRA
+npm install
+cp .env.example .env.local
+npm run db:push
+npm run dev</code></pre>
+        <p>
+          Full details are in the
+          <a href="https://github.com/hardikkanajariya-in/NODRA#self-hosting"
+            >README</a
+          >.
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap footer-inner">
+        <span>© 2026 Hardik Kanajariya</span>
+        <a href="https://github.com/hardikkanajariya-in/NODRA">hardikkanajariya-in/NODRA</a>
+      </div>
+    </footer>
+  </body>
+</html>

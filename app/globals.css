@@ -1,26 +1,223 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+:root,
+[data-theme="dark"] {
+  --nodra-bg: #16181c;
+  --nodra-main: #1e2127;
+  --nodra-sidebar: #14161a;
+  --nodra-border: #2d3139;
+  --nodra-fg: #e6e8eb;
+  --nodra-muted: #9aa3b2;
+  --nodra-accent: #3b82f6;
+  --nodra-tag: #a78bfa;
+  --nodra-danger: #f87171;
+  --nodra-bullet: #6b7280;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+[data-theme="light"] {
+  --nodra-bg: #f3f4f6;
+  --nodra-main: #ffffff;
+  --nodra-sidebar: #eceef2;
+  --nodra-border: #d8dde6;
+  --nodra-fg: #111827;
+  --nodra-muted: #6b7280;
+  --nodra-accent: #2563eb;
+  --nodra-tag: #7c3aed;
+  --nodra-danger: #dc2626;
+  --nodra-bullet: #9ca3af;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--nodra-bg);
+  color: var(--nodra-fg);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.nodra-app {
+  background: var(--nodra-bg);
+  color: var(--nodra-fg);
+}
+
+.nodra-header {
+  background: var(--nodra-sidebar);
+  border-color: var(--nodra-border);
+}
+
+.nodra-sidebar {
+  background: var(--nodra-sidebar);
+  border-color: var(--nodra-border);
+}
+
+@media (max-width: 767px) {
+  .nodra-sidebar {
+    position: fixed;
+    z-index: 40;
+    top: 2.75rem;
+    bottom: 0;
+    left: 0;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+  }
+  .nodra-sidebar.open {
+    transform: translateX(0);
+  }
+  .nodra-sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    top: 2.75rem;
+    z-index: 30;
+    background: rgba(0, 0, 0, 0.45);
+  }
+}
+
+.nodra-main {
+  background: var(--nodra-main);
+}
+
+.nodra-sidebar-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--nodra-muted);
+}
+
+.nodra-nav-item {
+  color: var(--nodra-fg);
+}
+.nodra-nav-item:hover,
+.nodra-nav-item.active {
+  background: color-mix(in srgb, var(--nodra-accent) 18%, transparent);
+  color: var(--nodra-fg);
+}
+
+.nodra-search,
+.nodra-input,
+.nodra-title-input {
+  background: var(--nodra-bg);
+  border: 1px solid var(--nodra-border);
+  border-radius: 6px;
+  color: var(--nodra-fg);
+  padding: 0.35rem 0.6rem;
+  font-size: 0.875rem;
+}
+
+.nodra-icon-btn {
+  border-radius: 6px;
+  padding: 0.35rem;
+  color: var(--nodra-muted);
+}
+.nodra-icon-btn:hover {
+  background: color-mix(in srgb, var(--nodra-fg) 8%, transparent);
+  color: var(--nodra-fg);
+}
+
+.nodra-page-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.75rem;
+  line-height: 1.25;
+}
+
+.nodra-login {
+  background: var(--nodra-bg);
+}
+.nodra-login-card {
+  background: var(--nodra-main);
+  border-color: var(--nodra-border);
+}
+
+.nodra-btn-primary {
+  background: var(--nodra-accent);
+  color: #fff;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.nodra-btn-primary:disabled {
+  opacity: 0.6;
+}
+
+.nodra-editor-prose {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.nodra-editor-prose ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0.15rem 0;
+}
+
+.nodra-editor-prose li {
+  position: relative;
+  padding-left: 1.25rem;
+  margin: 0.15rem 0;
+}
+
+.nodra-editor-prose li::before {
+  content: "";
+  position: absolute;
+  left: 0.35rem;
+  top: 0.65em;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--nodra-bullet);
+}
+
+.nodra-editor-prose li ul {
+  margin-left: 0.75rem;
+  border-left: 1px solid var(--nodra-border);
+  padding-left: 0.5rem;
+}
+
+.nodra-page-ref,
+.nodra-editor-prose .nodra-page-ref {
+  color: var(--nodra-accent);
+  cursor: pointer;
+}
+
+.nodra-tag {
+  color: var(--nodra-tag);
+}
+
+.nodra-property {
+  font-size: 0.875rem;
+  color: var(--nodra-muted);
+  margin: 0.15rem 0 0.35rem;
+}
+
+.nodra-property-key {
+  font-weight: 600;
+}
+
+.nodra-block-ref,
+.nodra-block-embed {
+  font-size: 0.875rem;
+  color: var(--nodra-muted);
+  border-bottom: 1px dashed var(--nodra-border);
+  cursor: pointer;
+}
+
+.nodra-editor-prose img {
+  max-width: 100%;
+  border-radius: 6px;
+  margin: 0.5rem 0;
+}
+
+.nodra-graph {
+  background: var(--nodra-main);
+}
+
+.nodra-graph .react-flow__node {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--nodra-border);
+  background: var(--nodra-sidebar);
+}
+
+.nodra-graph-journal {
+  border-color: var(--nodra-accent);
 }
