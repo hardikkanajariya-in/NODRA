@@ -3,14 +3,7 @@
 import Link from "next/link";
 import { ClientNavLink } from "./client-nav-link";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  CalendarDays,
-  FileText,
-  GitBranch,
-  Menu,
-  Plus,
-  Search,
-} from "lucide-react";
+import { CalendarDays, FileText, GitBranch, Plus, Search } from "lucide-react";
 import { format } from "date-fns";
 import { useMemo, useState } from "react";
 import { GraphSwitcher, type GraphSummary } from "./graph-switcher";
@@ -29,7 +22,6 @@ type Props = {
   onSearchChange: (v: string) => void;
   open: boolean;
   onClose: () => void;
-  onMenuClick: () => void;
 };
 
 export function LogseqSidebar({
@@ -40,7 +32,6 @@ export function LogseqSidebar({
   onSearchChange,
   open,
   onClose,
-  onMenuClick,
 }: Props) {
   const pathname = usePathname();
   const router = useRouter();
@@ -93,18 +84,8 @@ export function LogseqSidebar({
         />
       )}
       <aside
-        className={`nodra-sidebar flex w-[270px] shrink-0 flex-col border-r ${open ? "open" : ""}`}
+        className={`nodra-sidebar flex h-full w-[270px] shrink-0 flex-col border-r ${open ? "open" : ""}`}
       >
-        <div className="flex items-center gap-1 px-2 pt-2">
-          <button
-            type="button"
-            className="nodra-icon-btn"
-            onClick={onMenuClick}
-            aria-label="Toggle menu"
-          >
-            <Menu size={18} />
-          </button>
-        </div>
         <GraphSwitcher graphs={graphs} activeGraph={activeGraph} />
 
         <div className="px-3 py-2">

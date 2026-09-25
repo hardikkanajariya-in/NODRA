@@ -35,6 +35,39 @@ export function AssetImageView({
   const resizing = useRef(false);
   const startX = useRef(0);
   const startWidth = useRef(0);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!selected) {
+      setMenuOpen(false);
+      setAlignOpen(false);
+    }
+  }, [selected]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onPointerDown = (event: MouseEvent) => {
+      const root = rootRef.current;
+      if (root && !root.contains(event.target as globalThis.Node)) {
+        setMenuOpen(false);
+        setAlignOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        setAlignOpen(false);
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [menuOpen]);
 
   useEffect(() => {
     if (!uploading || !uploadId) return;
@@ -92,10 +125,13 @@ export function AssetImageView({
 
   return (
     <NodeViewWrapper
-      className={`nodra-asset-image nodra-asset-image--${align}`}
+      ref={rootRef}
+      className={`nodra-asset-image nodra-asset-image--${align}${
+        selected ? " nodra-asset-image--selected" : ""
+      }`}
       data-drag-handle
     >
-      {(selected || menuOpen) && (
+      {menuOpen && (
         <div className="nodra-asset-image-toolbar">
           <div className="nodra-asset-image-menu">
             <button
@@ -143,9 +179,9 @@ export function AssetImageView({
       <div
         className="nodra-asset-image-frame"
         style={width ? { width: `${width}px` } : undefined}
-        onClick={() => setMenuOpen(true)}
-        onBlur={() => {
-          if (!selected) setMenuOpen(false);
+        onClick={(e) => {
+          e.stopPropagation();
+          setMenuOpen((open) => !open);
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}

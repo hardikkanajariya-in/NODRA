@@ -27,21 +27,22 @@ export function LogseqShell({
   return (
     <ThemeProvider>
       <AppActivityProvider>
-        <div className="nodra-app flex h-screen">
+        <div className="nodra-app flex h-screen flex-col">
           <RouteLoadingBar />
-          <LogseqSidebar
-            pages={pages}
-            graphs={graphs}
-            activeGraph={activeGraph}
-            search={search}
-            onSearchChange={setSearch}
-            open={sidebarOpen}
-            onClose={() => setSidebarOpen(false)}
+          <LogseqHeader
             onMenuClick={() => setSidebarOpen((v) => !v)}
           />
-          <div className="flex min-w-0 flex-1 flex-col">
-            <LogseqHeader />
-            <main className="nodra-main min-h-0 flex-1 overflow-y-auto">
+          <div className="flex min-h-0 flex-1">
+            <LogseqSidebar
+              pages={pages}
+              graphs={graphs}
+              activeGraph={activeGraph}
+              search={search}
+              onSearchChange={setSearch}
+              open={sidebarOpen}
+              onClose={() => setSidebarOpen(false)}
+            />
+            <main className="nodra-main min-h-0 min-w-0 flex-1 overflow-y-auto">
               {children}
             </main>
           </div>

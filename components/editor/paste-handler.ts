@@ -6,6 +6,7 @@ import {
 } from "@/lib/logseq/paste-to-tiptap";
 import { uploadAssetFile } from "@/lib/assets/upload-client";
 import { clearUploadProgress } from "@/lib/assets/upload-progress";
+import { insertImageNode } from "./insert-image";
 
 export type UploadHandlers = {
   onUploadStart?: () => void;
@@ -40,8 +41,20 @@ export function handleLogseqPaste(
   if (!looksLogseq && !hasImageFile && !text) return false;
 
   event.preventDefault();
-  void processPaste(editor, clipboard, pageId, upload);
+  void processPaste(editor, clipboard, pageId, upload, hasImageFile);
   return true;
+}
+
+function isLogseqStructuredPaste(clipboard: DataTransfer): boolean {
+  const text = clipboard.getData("text/plain");
+  const html = clipboard.getData("text/html");
+  if (text.includes(":pages-and-blocks")) return true;
+  if (text.includes("~~")) return true;
+  if (text.includes("\n- ") || text.trim().startsWith("- ") || text.includes("\n\t-")) {
+    return true;
+  }
+  if (html && /<li[\s>]/i.test(html)) return true;
+  return false;
 }
 
 async function processPaste(
@@ -49,15 +62,22 @@ async function processPaste(
   clipboard: DataTransfer,
   pageId: string,
   upload?: UploadHandlers,
+  hasClipboardImages = false,
 ) {
   const pool = await buildImagePool(clipboard);
 
-  if (
-    pool.ordered.length === 1 &&
-    !clipboard.getData("text/plain") &&
-    !clipboard.getData("text/html")
-  ) {
-    await uploadAndInsertImage(editor, pool.ordered[0], pageId, upload);
+  const structured = isLogseqStructuredPaste(clipboard);
+  if (hasClipboardImages && pool.ordered.length > 0 && !structured) {
+    upload?.onUploadStart?.();
+    try {
+      for (const file of pool.ordered) {
+        await uploadAndInsertImage(editor, file, pageId, upload, {
+          manageUploadLifecycle: false,
+        });
+      }
+    } finally {
+      upload?.onUploadEnd?.();
+    }
     return;
   }
 
@@ -171,24 +191,19 @@ async function uploadAndInsertImage(
   file: File,
   pageId: string,
   upload?: UploadHandlers,
+  options?: { manageUploadLifecycle?: boolean },
 ) {
+  const manageLifecycle = options?.manageUploadLifecycle ?? true;
   const uploadId = crypto.randomUUID();
   const previewUrl = URL.createObjectURL(file);
-  upload?.onUploadStart?.();
-  editor
-    .chain()
-    .focus()
-    .insertContent({
-      type: "image",
-      attrs: {
-        src: previewUrl,
-        alt: file.name,
-        align: "left",
-        uploading: true,
-        uploadId,
-      },
-    })
-    .run();
+  if (manageLifecycle) upload?.onUploadStart?.();
+  insertImageNode(editor, {
+    src: previewUrl,
+    alt: file.name,
+    align: "left",
+    uploading: true,
+    uploadId,
+  });
 
   try {
     const data = await uploadAssetFile(file, pageId, {
@@ -208,6 +223,6 @@ async function uploadAndInsertImage(
   } finally {
     URL.revokeObjectURL(previewUrl);
     clearUploadProgress(uploadId);
-    upload?.onUploadEnd?.();
+    if (manageLifecycle) upload?.onUploadEnd?.();
   }
 }

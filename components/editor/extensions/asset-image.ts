@@ -7,6 +7,8 @@ export const AssetImage = Image.extend({
 
   group: "block",
 
+  allowBase64: true,
+
   addAttributes() {
     return {
       ...this.parent?.(),
