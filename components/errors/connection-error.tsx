@@ -19,7 +19,9 @@ export function ConnectionError({
               <code className="nodra-inline-code">DATABASE_URL</code> is set
             </li>
             <li>
-              Schema is applied: <code className="nodra-inline-code">pnpm db:push</code>
+              Schema sync runs on <code className="nodra-inline-code">pnpm build</code>{" "}
+              / <code className="nodra-inline-code">pnpm dev</code> when{" "}
+              <code className="nodra-inline-code">DATABASE_URL</code> is set
             </li>
             <li>
               Other required vars:{" "}

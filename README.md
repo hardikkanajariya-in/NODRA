@@ -39,11 +39,9 @@ pnpm install
 cp .env.example .env.local
 ```
 
-Edit `.env.local` with your values, then apply the schema:
+Edit `.env.local` with your values (`DATABASE_URL` is required for the app to run).
 
-```bash
-pnpm db:push
-```
+The database schema is applied automatically when you run `pnpm dev` or `pnpm build` (via `pnpm db:sync`).
 
 Run locally:
 
@@ -63,13 +61,13 @@ Open [http://localhost:3000](http://localhost:3000) and sign in with `APP_PASSWO
 | `R2_*` | Cloudflare R2 credentials for assets |
 | `NEXT_PUBLIC_APP_URL` | Public URL of your deployment |
 
-### Database migrations
+### Database schema
 
-SQL migrations live in [`drizzle/`](drizzle/). For a fresh database you can use `pnpm db:push` or run `drizzle/0000_initial.sql` against your instance.
+Schema is defined in [`lib/db/schema.ts`](lib/db/schema.ts). On deploy and local `dev`/`build`, `scripts/apply-schema.mjs` runs `drizzle-kit push` against `DATABASE_URL`. To skip sync (e.g. CI without a database), set `SKIP_DB_SYNC=1`. Manual override: `pnpm db:push` or `pnpm db:sync`.
 
 ### Production
 
-Deploy as a standard Next.js application. Set the environment variables in your host, run migrations, then build:
+Deploy as a standard Next.js application. Set environment variables on the host (including `DATABASE_URL` for the build step). `pnpm build` applies the schema automatically, then compiles the app:
 
 ```bash
 pnpm build

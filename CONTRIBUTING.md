@@ -14,7 +14,6 @@ git clone https://github.com/hardikkanajariya-in/NODRA.git
 cd NODRA
 pnpm install
 cp .env.example .env.local
-pnpm db:push
 pnpm dev
 ```
 
