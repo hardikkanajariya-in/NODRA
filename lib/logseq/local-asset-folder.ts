@@ -217,7 +217,15 @@ export async function ensureLogseqAssetPermission(): Promise<LogseqAssetFolderSt
 
 export async function linkLogseqAssetsFolder(): Promise<LogseqAssetFolderStatus> {
   if (!isLogseqAssetPickerSupported()) return "unavailable";
-  const root = await window.showDirectoryPicker({ mode: "read" });
+  let root: FileSystemDirectoryHandle;
+  try {
+    root = await window.showDirectoryPicker({ mode: "read" });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      return getLogseqAssetFolderStatus();
+    }
+    throw error;
+  }
   await idbSetHandle(root);
   cachedAssetsDir = null;
   cachedRootKey = null;

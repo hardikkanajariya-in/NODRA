@@ -10,7 +10,7 @@ function mockClipboard(text: string): DataTransfer {
     getData: (type: string) => (type === "text/plain" ? text : ""),
     files: [] as unknown as FileList,
     items: [] as unknown as DataTransferItemList,
-  } as DataTransfer;
+  } as unknown as DataTransfer;
 }
 
 const emptyPool: ImagePool = { byName: new Map(), ordered: [] };

@@ -10,22 +10,24 @@ import {
   readLogseqAssetsMeta,
   unlinkLogseqAssetsFolder,
   type LogseqAssetFolderStatus,
+  type LogseqAssetsFolderMeta,
 } from "@/lib/logseq/local-asset-folder";
 
 export function LogseqAssetsLink() {
   const [status, setStatus] = useState<LogseqAssetFolderStatus>("not_linked");
-  const [meta, setMeta] = useState(readLogseqAssetsMeta());
+  const [meta, setMeta] = useState<LogseqAssetsFolderMeta | null>(null);
   const [busy, setBusy] = useState(false);
   const [braveNeedsFlag, setBraveNeedsFlag] = useState(false);
-  const supported = isLogseqAssetPickerSupported();
+  /** null until mounted — avoids SSR/client mismatch for window APIs */
+  const [pickerSupported, setPickerSupported] = useState<boolean | null>(null);
 
   useEffect(() => {
     void (async () => {
-      const nextMeta = readLogseqAssetsMeta();
-      const nextStatus = await getLogseqAssetFolderStatus();
-      setMeta(nextMeta);
-      setStatus(nextStatus);
-      if (!isLogseqAssetPickerSupported() && (await isBraveBrowser())) {
+      const supported = isLogseqAssetPickerSupported();
+      setPickerSupported(supported);
+      setMeta(readLogseqAssetsMeta());
+      setStatus(await getLogseqAssetFolderStatus());
+      if (!supported && (await isBraveBrowser())) {
         setBraveNeedsFlag(true);
       }
     })();
@@ -37,6 +39,8 @@ export function LogseqAssetsLink() {
       const next = await linkLogseqAssetsFolder();
       setStatus(next);
       setMeta(readLogseqAssetsMeta());
+    } catch {
+      // Non-abort failures are rare; keep current UI state
     } finally {
       setBusy(false);
     }
@@ -63,6 +67,7 @@ export function LogseqAssetsLink() {
     }
   }
 
+  const supported = pickerSupported === true;
   const linked = status === "ready";
   const needsPermission = status === "denied";
 
@@ -91,7 +96,13 @@ export function LogseqAssetsLink() {
         </code>
       </p>
 
-      {!supported && braveNeedsFlag && (
+      {pickerSupported === null && (
+        <p className="mt-3 text-xs text-[var(--nodra-muted)]">
+          Checking browser support…
+        </p>
+      )}
+
+      {pickerSupported === false && braveNeedsFlag && (
         <div className="mt-3 text-sm text-amber-600 dark:text-amber-400">
           <p>
             Brave uses Chromium, but it turns off the folder picker API by
@@ -106,7 +117,7 @@ export function LogseqAssetsLink() {
           </p>
         </div>
       )}
-      {!supported && !braveNeedsFlag && (
+      {pickerSupported === false && !braveNeedsFlag && (
         <p className="mt-3 text-sm text-amber-600 dark:text-amber-400">
           Folder linking needs a browser that exposes{" "}
           <code className="text-[12px]">showDirectoryPicker</code> (Chrome,
@@ -119,7 +130,10 @@ export function LogseqAssetsLink() {
         <div className="mt-4 flex flex-wrap items-center gap-2">
           {linked && meta && (
             <span className="text-sm text-[var(--nodra-muted)]">
-              Linked: <span className="font-medium text-[var(--nodra-fg)]">{meta.name}</span>
+              Linked:{" "}
+              <span className="font-medium text-[var(--nodra-fg)]">
+                {meta.name}
+              </span>
             </span>
           )}
           {!linked && !needsPermission && (
