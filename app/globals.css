@@ -336,6 +336,99 @@ body {
   padding-bottom: 2rem;
 }
 
+.nodra-journal-feed-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--nodra-border);
+}
+
+.nodra-journal-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--nodra-fg);
+  background: transparent;
+  border: 1px solid var(--nodra-border);
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.nodra-journal-toolbar-btn:hover:not(:disabled) {
+  background: var(--nodra-nav-active);
+  border-color: color-mix(in srgb, var(--nodra-accent) 25%, var(--nodra-border));
+}
+
+.nodra-journal-toolbar-btn--primary {
+  color: var(--nodra-link);
+  border-color: color-mix(in srgb, var(--nodra-link) 35%, var(--nodra-border));
+}
+
+.nodra-journal-toolbar-btn--submit {
+  color: #fff;
+  background: var(--nodra-accent);
+  border-color: var(--nodra-accent);
+}
+
+.nodra-journal-toolbar-btn--submit:hover:not(:disabled) {
+  filter: brightness(1.05);
+  background: var(--nodra-accent);
+}
+
+.nodra-journal-toolbar-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.nodra-journal-create-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nodra-journal-date-input {
+  font-family: var(--nodra-font);
+  font-size: 0.875rem;
+  color: var(--nodra-fg);
+  background: var(--nodra-main);
+  border: 1px solid var(--nodra-border);
+  border-radius: 6px;
+  padding: 0.35rem 0.55rem;
+}
+
+.nodra-journal-date-input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--nodra-accent) 45%, var(--nodra-border));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--nodra-accent) 12%, transparent);
+}
+
+.nodra-journal-create-error {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--nodra-danger);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .nodra-journal-feed--scroll .nodra-journal-date {
   font-size: 1.25rem;
   margin: 0.65rem 0 0.1rem;
