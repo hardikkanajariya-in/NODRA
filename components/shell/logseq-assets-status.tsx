@@ -40,7 +40,6 @@ export function LogseqAssetsTopBarStatus({ graphId }: Props) {
   }, [graphId, refresh]);
 
   const onActivate = useCallback(async () => {
-    setHint("");
     if (status === "not_linked") {
       await linkFolder();
       return;
