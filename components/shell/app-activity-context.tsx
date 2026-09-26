@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import type { PresenceUser } from "@/lib/realtime/types";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -23,8 +24,8 @@ type Ctx = {
   beginUpload: () => void;
   setUploadProgress: (percent: number) => void;
   endUpload: () => void;
-  activeUsers: number;
-  setActiveUsers: (n: number) => void;
+  activePresence: PresenceUser[];
+  setActivePresence: (users: PresenceUser[]) => void;
 };
 
 const AppActivityContext = createContext<Ctx | null>(null);
@@ -37,7 +38,7 @@ export function AppActivityProvider({ children }: { children: ReactNode }) {
   const [uploadProgress, setUploadProgressState] = useState<number | null>(
     null,
   );
-  const [activeUsers, setActiveUsers] = useState(0);
+  const [activePresence, setActivePresence] = useState<PresenceUser[]>([]);
 
   const beginUpload = useCallback(() => {
     setUploadCount((c) => c + 1);
@@ -67,8 +68,8 @@ export function AppActivityProvider({ children }: { children: ReactNode }) {
       beginUpload,
       setUploadProgress,
       endUpload,
-      activeUsers,
-      setActiveUsers,
+      activePresence,
+      setActivePresence,
     }),
     [
       saveStatus,
@@ -79,7 +80,7 @@ export function AppActivityProvider({ children }: { children: ReactNode }) {
       beginUpload,
       setUploadProgress,
       endUpload,
-      activeUsers,
+      activePresence,
     ],
   );
 

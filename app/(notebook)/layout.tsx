@@ -1,4 +1,5 @@
 import { listPages } from "@/lib/pages/service";
+import { getSession } from "@/lib/auth/session";
 import {
   getActiveGraph,
   listGraphs,
@@ -15,11 +16,17 @@ export default async function NotebookLayout({
   let pages: { id: string; name: string; slug: string }[] = [];
   let graphs: { id: string; name: string; slug: string }[] = [];
   let activeGraph = { id: "", name: "NODRA", slug: "main" };
+  let currentUsername = "";
 
   try {
-    const graph = await getActiveGraph();
+    const session = await getSession();
+    if (!session) {
+      throw new Error("Unauthorized");
+    }
+    currentUsername = session.username;
+    const graph = await getActiveGraph(session.userId);
     activeGraph = { id: graph.id, name: graph.name, slug: graph.slug };
-    graphs = await listGraphs();
+    graphs = await listGraphs(session.userId);
     pages = await listPages(graph.id);
   } catch {
     pages = [];
@@ -27,7 +34,12 @@ export default async function NotebookLayout({
   }
 
   return (
-    <LogseqShell pages={pages} graphs={graphs} activeGraph={activeGraph}>
+    <LogseqShell
+      pages={pages}
+      graphs={graphs}
+      activeGraph={activeGraph}
+      currentUsername={currentUsername}
+    >
       {children}
     </LogseqShell>
   );

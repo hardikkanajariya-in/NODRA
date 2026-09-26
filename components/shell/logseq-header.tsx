@@ -2,12 +2,14 @@
 
 import { Menu, Moon, Sun, Users } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { useMemo } from "react";
 import { useTheme } from "./theme-provider";
 import { GlobalStatusBar } from "./global-status-bar";
 import { useAppActivity } from "./app-activity-context";
 
 type Props = {
   onMenuClick?: () => void;
+  currentUsername?: string;
 };
 
 function headerTitle(pathname: string): string {
@@ -26,11 +28,20 @@ function headerTitle(pathname: string): string {
   return "NODRA";
 }
 
-export function LogseqHeader({ onMenuClick }: Props) {
+export function LogseqHeader({ onMenuClick, currentUsername = "" }: Props) {
   const { theme, toggle } = useTheme();
-  const { activeUsers } = useAppActivity();
+  const { activePresence } = useAppActivity();
   const pathname = usePathname();
   const title = headerTitle(pathname);
+
+  const othersOnGraph = useMemo(() => {
+    const key = currentUsername.trim().toLowerCase();
+    return activePresence.filter(
+      (u) => u.username.trim().toLowerCase() !== key,
+    );
+  }, [activePresence, currentUsername]);
+
+  const presenceLabel = othersOnGraph.map((u) => u.username).join(", ");
 
   return (
     <header className="nodra-main-toolbar flex h-11 shrink-0 items-center gap-3 border-b border-[var(--nodra-border)] px-3 md:px-4">
@@ -48,13 +59,13 @@ export function LogseqHeader({ onMenuClick }: Props) {
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        {activeUsers > 0 && (
+        {othersOnGraph.length > 0 && (
           <span
-            className="nodra-active-users flex items-center gap-1 text-xs text-[var(--nodra-muted)]"
-            title="Active sessions on this graph"
+            className="nodra-active-users flex max-w-[12rem] items-center gap-1 truncate text-xs text-[var(--nodra-muted)] md:max-w-xs"
+            title={`Also on this graph: ${presenceLabel}`}
           >
-            <Users size={14} aria-hidden />
-            <span>{activeUsers}</span>
+            <Users size={14} aria-hidden className="shrink-0" />
+            <span className="truncate">{presenceLabel}</span>
           </span>
         )}
         <GlobalStatusBar />

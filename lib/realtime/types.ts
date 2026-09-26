@@ -1,3 +1,8 @@
+export type PresenceUser = {
+  userId: string;
+  username: string;
+};
+
 export type RealtimeEvent =
   | {
       type: "document-updated";
@@ -10,5 +15,5 @@ export type RealtimeEvent =
     }
   | {
       type: "presence";
-      activeUsers: number;
+      users: PresenceUser[];
     };

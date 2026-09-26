@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { verifyAppPassword } from "@/lib/auth/password";
+import { PASSWORD_MIN } from "@/lib/auth/password";
+import { authenticateUser } from "@/lib/auth/users";
 import { createSession, sessionCookieOptions } from "@/lib/auth/session";
 
 const bodySchema = z.object({
-  password: z.string().min(1),
+  username: z.string().min(1),
+  password: z.string().min(PASSWORD_MIN),
 });
 
 export async function POST(request: Request) {
@@ -14,13 +16,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
-  if (!verifyAppPassword(parsed.data.password)) {
-    return NextResponse.json({ error: "Invalid password" }, { status: 401 });
+  const user = await authenticateUser(
+    parsed.data.username,
+    parsed.data.password,
+  );
+  if (!user) {
+    return NextResponse.json({ error: "Invalid username or password" }, {
+      status: 401,
+    });
   }
 
-  const token = await createSession();
+  const token = await createSession({
+    userId: user.id,
+    username: user.username,
+  });
   const response = NextResponse.json({ ok: true });
-  const opts = sessionCookieOptions(token);
-  response.cookies.set(opts);
+  response.cookies.set(sessionCookieOptions(token));
   return response;
 }

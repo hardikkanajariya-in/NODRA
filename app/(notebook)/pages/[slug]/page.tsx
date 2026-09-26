@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getPageBySlug } from "@/lib/pages/service";
-import { getActiveGraphId } from "@/lib/graphs/service";
+import { getSessionUserActiveGraphId } from "@/lib/graphs/session-graph";
 import { ensureDocument, getErrorMessage } from "@/lib/pages/document";
 import { ConnectionError } from "@/components/errors/connection-error";
 import { PageTitle } from "@/components/shell/page-title";
@@ -15,7 +15,7 @@ export default async function NotebookPagePage({ params }: Props) {
 
   let page;
   try {
-    const graphId = await getActiveGraphId();
+    const graphId = await getSessionUserActiveGraphId();
     page = await getPageBySlug(graphId, slug);
   } catch (error) {
     return <ConnectionError message={getErrorMessage(error)} />;
@@ -28,7 +28,7 @@ export default async function NotebookPagePage({ params }: Props) {
   try {
     if (!page.document) {
       await ensureDocument(page.id);
-      const graphId = await getActiveGraphId();
+      const graphId = await getSessionUserActiveGraphId();
       page = await getPageBySlug(graphId, slug);
     }
 

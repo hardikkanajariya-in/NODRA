@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createPage, listPages } from "@/lib/pages/service";
-import { getActiveGraphId } from "@/lib/graphs/service";
+import { getSessionUserActiveGraphId } from "@/lib/graphs/session-graph";
 
 export async function GET() {
-  const graphId = await getActiveGraphId();
+  const graphId = await getSessionUserActiveGraphId();
   const pages = await listPages(graphId);
   return NextResponse.json(pages);
 }
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid name" }, { status: 400 });
   }
 
-  const graphId = await getActiveGraphId();
+  const graphId = await getSessionUserActiveGraphId();
   const page = await createPage(graphId, parsed.data.name.trim());
   return NextResponse.json(page);
 }

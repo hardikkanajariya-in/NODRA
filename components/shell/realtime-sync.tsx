@@ -16,7 +16,7 @@ type Props = {
 export function RealtimeSync({ graphId }: Props) {
   const router = useRouter();
   const pathname = usePathname();
-  const { setActiveUsers } = useAppActivity();
+  const { setActivePresence } = useAppActivity();
   const lastCatalogRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export function RealtimeSync({ graphId }: Props) {
       }
 
       if (event.type === "presence") {
-        setActiveUsers(event.activeUsers);
+        setActivePresence(event.users);
         return;
       }
 
@@ -58,9 +58,9 @@ export function RealtimeSync({ graphId }: Props) {
 
     return () => {
       source.close();
-      setActiveUsers(0);
+      setActivePresence([]);
     };
-  }, [graphId, pathname, router, setActiveUsers]);
+  }, [graphId, pathname, router, setActivePresence]);
 
   return null;
 }

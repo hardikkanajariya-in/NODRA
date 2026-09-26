@@ -11,12 +11,32 @@ import {
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
+export const users = pgTable(
+  "users",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    username: text("username").notNull(),
+    usernameKey: text("username_key").notNull(),
+    passwordHash: text("password_hash").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [uniqueIndex("users_username_key_idx").on(t.usernameKey)],
+);
+
 export const graphs = pgTable(
   "graphs",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     name: text("name").notNull(),
     slug: text("slug").notNull(),
+    ownerUserId: uuid("owner_user_id").references(() => users.id, {
+      onDelete: "restrict",
+    }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -25,6 +45,26 @@ export const graphs = pgTable(
       .notNull(),
   },
   (t) => [uniqueIndex("graphs_slug_idx").on(t.slug)],
+);
+
+export const graphShares = pgTable(
+  "graph_shares",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    graphId: uuid("graph_id")
+      .notNull()
+      .references(() => graphs.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex("graph_shares_graph_user_idx").on(t.graphId, t.userId),
+    index("graph_shares_user_id_idx").on(t.userId),
+  ],
 );
 
 export const pages = pgTable(
@@ -107,8 +147,29 @@ export const links = pgTable(
   ],
 );
 
-export const graphsRelations = relations(graphs, ({ many }) => ({
+export const usersRelations = relations(users, ({ many }) => ({
+  ownedGraphs: many(graphs),
+  graphShares: many(graphShares),
+}));
+
+export const graphsRelations = relations(graphs, ({ one, many }) => ({
+  owner: one(users, {
+    fields: [graphs.ownerUserId],
+    references: [users.id],
+  }),
+  shares: many(graphShares),
   pages: many(pages),
+}));
+
+export const graphSharesRelations = relations(graphShares, ({ one }) => ({
+  graph: one(graphs, {
+    fields: [graphShares.graphId],
+    references: [graphs.id],
+  }),
+  user: one(users, {
+    fields: [graphShares.userId],
+    references: [users.id],
+  }),
 }));
 
 export const pagesRelations = relations(pages, ({ one, many }) => ({

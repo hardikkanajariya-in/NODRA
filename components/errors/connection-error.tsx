@@ -25,8 +25,12 @@ export function ConnectionError({
             </li>
             <li>
               Other required vars:{" "}
-              <code className="nodra-inline-code">APP_PASSWORD</code>,{" "}
               <code className="nodra-inline-code">SESSION_SECRET</code>
+            </li>
+            <li>
+              After upgrading to multi-user auth, remove{" "}
+              <code className="nodra-inline-code">APP_PASSWORD</code> and have
+              each person register; the first account claims existing graphs.
             </li>
           </ul>
         </div>

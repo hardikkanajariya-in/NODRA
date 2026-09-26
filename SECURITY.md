@@ -15,6 +15,6 @@ We will acknowledge receipt and work on a fix as soon as practical.
 
 ## Deployment notes
 
-- Keep `APP_PASSWORD` and `SESSION_SECRET` out of version control.
+- Keep `SESSION_SECRET` and database credentials out of version control.
 - Use HTTPS in production so session cookies are protected.
 - Restrict database and R2 credentials to your deployment environment only.

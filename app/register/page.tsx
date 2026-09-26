@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -16,20 +17,20 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, confirmPassword }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        setError(data.error ?? "Invalid username or password");
+        setError(data.error ?? "Could not register");
         return;
       }
       router.push("/");
       router.refresh();
     } catch {
-      setError("Could not sign in");
+      setError("Could not register");
     } finally {
       setLoading(false);
     }
@@ -41,9 +42,11 @@ export default function LoginPage() {
         onSubmit={onSubmit}
         className="nodra-login-card w-full max-w-sm rounded-lg border p-6"
       >
-        <h1 className="text-xl font-semibold">NODRA</h1>
+        <h1 className="text-xl font-semibold">Create account</h1>
         <p className="mt-1 text-sm text-[var(--nodra-muted)]">
-          Sign in with your username and password.
+          Register to use this NODRA instance. The first account on an existing
+          notebook becomes owner of all graphs that were created before
+          multi-user auth.
         </p>
         <label className="mt-6 block text-sm" htmlFor="username">
           Username
@@ -65,7 +68,18 @@ export default function LoginPage() {
           className="nodra-input mt-1 w-full"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          autoComplete="current-password"
+          autoComplete="new-password"
+        />
+        <label className="mt-4 block text-sm" htmlFor="confirmPassword">
+          Confirm password
+        </label>
+        <input
+          id="confirmPassword"
+          type="password"
+          className="nodra-input mt-1 w-full"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          autoComplete="new-password"
         />
         {error && (
           <p className="mt-2 text-sm text-[var(--nodra-danger)]">{error}</p>
@@ -75,12 +89,12 @@ export default function LoginPage() {
           className="nodra-btn-primary mt-4 w-full"
           disabled={loading}
         >
-          {loading ? "Signing in…" : "Sign in"}
+          {loading ? "Creating…" : "Register"}
         </button>
         <p className="mt-4 text-center text-sm text-[var(--nodra-muted)]">
-          No account?{" "}
-          <Link href="/register" className="text-[var(--nodra-link)]">
-            Register
+          Already have an account?{" "}
+          <Link href="/login" className="text-[var(--nodra-link)]">
+            Sign in
           </Link>
         </p>
       </form>

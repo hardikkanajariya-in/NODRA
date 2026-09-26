@@ -13,6 +13,7 @@ type Props = {
   pages: SidebarPage[];
   graphs: GraphSummary[];
   activeGraph: GraphSummary;
+  currentUsername?: string;
   children: React.ReactNode;
 };
 
@@ -20,6 +21,7 @@ export function LogseqShell({
   pages,
   graphs,
   activeGraph,
+  currentUsername = "",
   children,
 }: Props) {
   const [search, setSearch] = useState("");
@@ -44,6 +46,7 @@ export function LogseqShell({
           <div className="nodra-main-column flex min-h-0 min-w-0 flex-1 flex-col">
             <LogseqHeader
               onMenuClick={() => setSidebarOpen((v) => !v)}
+              currentUsername={currentUsername}
             />
             <main className="nodra-main min-h-0 flex-1 overflow-y-auto">
               {children}

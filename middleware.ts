@@ -4,7 +4,12 @@ import { jwtVerify } from "jose";
 
 const COOKIE_NAME = "nodra_session";
 
-const PUBLIC_PATHS = ["/login", "/api/auth/login"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/register",
+  "/api/auth/login",
+  "/api/auth/register",
+];
 
 function isPublic(pathname: string): boolean {
   return PUBLIC_PATHS.some(
@@ -30,7 +35,13 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    await jwtVerify(token, new TextEncoder().encode(secret));
+    const { payload } = await jwtVerify(
+      token,
+      new TextEncoder().encode(secret),
+    );
+    if (typeof payload.sub !== "string") {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
     return NextResponse.next();
   } catch {
     return NextResponse.redirect(new URL("/login", request.url));

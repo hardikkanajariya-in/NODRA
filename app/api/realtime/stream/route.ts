@@ -1,4 +1,4 @@
-import { getSessionFromCookies } from "@/lib/auth/session";
+import { getSession } from "@/lib/auth/session";
 import { getActiveGraphId } from "@/lib/graphs/service";
 import { pollGraphChanges } from "@/lib/realtime/poll-changes";
 import { subscribeGraph } from "@/lib/realtime/hub";
@@ -16,12 +16,12 @@ const POLL_MS = 2000;
 const PING_MS = 25000;
 
 export async function GET(request: Request) {
-  const authed = await getSessionFromCookies();
-  if (!authed) {
+  const session = await getSession();
+  if (!session) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const graphId = await getActiveGraphId();
+  const graphId = await getActiveGraphId(session.userId);
   const connectionId = randomUUID();
   const encoder = new TextEncoder();
   let closed = false;
@@ -37,8 +37,13 @@ export async function GET(request: Request) {
         );
       };
 
-      const activeUsers = registerConnection(graphId, connectionId);
-      send({ type: "presence", activeUsers });
+      const users = registerConnection(
+        graphId,
+        connectionId,
+        session.userId,
+        session.username,
+      );
+      send({ type: "presence", users });
 
       const unsubscribe = subscribeGraph(graphId, send);
 
