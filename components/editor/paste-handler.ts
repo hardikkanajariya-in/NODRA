@@ -7,6 +7,7 @@ import {
 import {
   prepareLogseqPaste,
   readClipboardStrings,
+  type PrepareLogseqPasteOptions,
 } from "@/lib/logseq/paste-to-tiptap";
 import { uploadAssetFile } from "@/lib/assets/upload-client";
 import { clearUploadProgress } from "@/lib/assets/upload-progress";
@@ -54,9 +55,7 @@ export function handleLogseqPaste(
   return true;
 }
 
-function isLogseqStructuredPaste(clipboard: DataTransfer): boolean {
-  const text = clipboard.getData("text/plain");
-  const html = clipboard.getData("text/html");
+function isLogseqStructuredPaste(text: string, html: string): boolean {
   if (text.includes(":pages-and-blocks")) return true;
   if (text.includes("~~")) return true;
   if (text.includes("\n- ") || text.trim().startsWith("- ") || text.includes("\n\t-")) {
@@ -74,9 +73,18 @@ async function processPaste(
   hasClipboardImages = false,
   plainText = "",
 ) {
+  const clipboardSnapshot = {
+    text: plainText || clipboard.getData("text/plain"),
+    html: clipboard.getData("text/html"),
+    strings: readClipboardStrings(clipboard),
+  };
+
   const pool = await buildImagePool(clipboard);
 
-  const structured = isLogseqStructuredPaste(clipboard);
+  const structured = isLogseqStructuredPaste(
+    clipboardSnapshot.text,
+    clipboardSnapshot.html,
+  );
   if (hasClipboardImages && pool.ordered.length > 0 && !structured) {
     upload?.onUploadStart?.();
     try {
@@ -98,18 +106,36 @@ async function processPaste(
     folderReady = false;
   }
 
+  const resolveLocal = folderReady ? resolveLocalAssetFile : undefined;
+  const pasteOptions = {
+    resolveLocalFile: resolveLocal,
+    clipboardText: clipboardSnapshot.text,
+    clipboardHtml: clipboardSnapshot.html,
+    clipboardStrings: clipboardSnapshot.strings,
+  };
+
   let prepared;
   try {
-    prepared = await prepareLogseqPaste(clipboard, pool, {
-      resolveLocalFile: folderReady ? resolveLocalAssetFile : undefined,
-    });
+    prepared = await prepareLogseqPaste(clipboard, pool, pasteOptions);
   } catch {
-    if (plainText.trim()) await insertPlainOutlinePasteAsync(editor, plainText);
+    if (clipboardSnapshot.text.trim()) {
+      await insertPlainOutlinePasteAsync(
+        editor,
+        clipboardSnapshot.text,
+        pasteOptions,
+      );
+    }
     return;
   }
 
   if (!insertPreparedContent(editor, prepared.content)) {
-    if (plainText.trim()) await insertPlainOutlinePasteAsync(editor, plainText);
+    if (clipboardSnapshot.text.trim()) {
+      await insertPlainOutlinePasteAsync(
+        editor,
+        clipboardSnapshot.text,
+        pasteOptions,
+      );
+    }
     return;
   }
   if (!prepared.jobs.length) return;
@@ -160,6 +186,7 @@ function insertPreparedContent(editor: Editor, content: JsonNode[]): boolean {
 async function insertPlainOutlinePasteAsync(
   editor: Editor,
   text: string,
+  options?: PrepareLogseqPasteOptions,
 ): Promise<boolean> {
   const pool = { byName: new Map<string, File>(), ordered: [] as File[] };
   const clip = {
@@ -168,7 +195,10 @@ async function insertPlainOutlinePasteAsync(
     files: [],
     items: [],
   } as unknown as DataTransfer;
-  const prepared = await prepareLogseqPaste(clip, pool);
+  const prepared = await prepareLogseqPaste(clip, pool, {
+    ...options,
+    clipboardText: text,
+  });
   return applyOutlineInsert(editor, prepared.content);
 }
 

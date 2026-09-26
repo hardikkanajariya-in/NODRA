@@ -25,6 +25,10 @@ export type PreparedPaste = {
 
 export type PrepareLogseqPasteOptions = {
   resolveLocalFile?: (hint: string, url?: string) => Promise<File | null>;
+  /** Read synchronously on paste; clipboard may be empty after async work. */
+  clipboardText?: string;
+  clipboardHtml?: string;
+  clipboardStrings?: string[];
 };
 
 export function readClipboardStrings(clipboard: DataTransfer): string[] {
@@ -54,9 +58,12 @@ export async function prepareLogseqPaste(
   options?: PrepareLogseqPasteOptions,
 ): Promise<PreparedPaste> {
   const resolveLocalFile = options?.resolveLocalFile;
-  const strings = readClipboardStrings(clipboard);
-  const html = clipboard.getData("text/html");
-  const text = clipboard.getData("text/plain");
+  const strings =
+    options?.clipboardStrings ?? readClipboardStrings(clipboard);
+  const html =
+    options?.clipboardHtml ?? clipboard.getData("text/html");
+  const text =
+    options?.clipboardText ?? clipboard.getData("text/plain");
   const edn = strings.find((s) => s.includes(":pages-and-blocks"));
 
   let htmlImageSrcs: string[] = [];
