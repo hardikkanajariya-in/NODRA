@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   dispatchDocumentUpdated,
+  dispatchPagesChanged,
   type DocumentUpdatedDetail,
 } from "@/lib/realtime/client";
 import type { RealtimeEvent } from "@/lib/realtime/types";
@@ -40,6 +41,7 @@ export function RealtimeSync({ graphId }: Props) {
       if (event.type === "pages-changed") {
         if (lastCatalogRef.current === event.catalogRevision) return;
         lastCatalogRef.current = event.catalogRevision;
+        dispatchPagesChanged({ catalogRevision: event.catalogRevision });
         router.refresh();
         return;
       }

@@ -4,6 +4,7 @@ import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { dispatchPagesChanged } from "@/lib/realtime/client";
 
 type Props = {
   pageId: string;
@@ -52,6 +53,7 @@ export function JournalDayHeader({
     try {
       const res = await fetch(`/api/pages/${pageId}`, { method: "DELETE" });
       if (res.ok) {
+        dispatchPagesChanged({ catalogRevision: `local-${Date.now()}` });
         router.push("/journal");
         router.refresh();
       }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PageEditor } from "@/components/editor/page-editor";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { dispatchPagesChanged } from "@/lib/realtime/client";
 
 type Props = {
   entry: {
@@ -57,6 +58,7 @@ export function JournalFeedSection({
     try {
       const res = await fetch(`/api/pages/${entry.id}`, { method: "DELETE" });
       if (res.ok) {
+        dispatchPagesChanged({ catalogRevision: `local-${Date.now()}` });
         router.refresh();
       }
     } finally {

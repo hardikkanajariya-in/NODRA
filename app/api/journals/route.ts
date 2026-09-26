@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { listJournals } from "@/lib/pages/service";
 import { getSessionUserActiveGraphId } from "@/lib/graphs/session-graph";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const graphId = await getSessionUserActiveGraphId();
   const journals = await listJournals(graphId, 120);
@@ -12,5 +14,10 @@ export async function GET() {
       slug: j.slug,
       journalDate: j.journalDate,
     })),
+    {
+      headers: {
+        "Cache-Control": "private, no-store, max-age=0",
+      },
+    },
   );
 }

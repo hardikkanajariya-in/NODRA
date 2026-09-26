@@ -13,6 +13,7 @@ import {
   journalDayLabel,
   type JournalListItem,
 } from "@/components/journal/journal-picker-dialog";
+import { PAGES_CHANGED_EVENT } from "@/lib/realtime/client";
 
 type Props = {
   onClose: () => void;
@@ -97,7 +98,7 @@ export function JournalSidebarSection({ onClose, navClass }: Props) {
 
   const loadJournals = useCallback(async () => {
     try {
-      const res = await fetch("/api/journals");
+      const res = await fetch("/api/journals", { cache: "no-store" });
       if (!res.ok) return;
       const data = (await res.json()) as JournalListItem[];
       setJournals(data);
@@ -107,21 +108,16 @@ export function JournalSidebarSection({ onClose, navClass }: Props) {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const res = await fetch("/api/journals");
-        if (!res.ok || cancelled) return;
-        const data = (await res.json()) as JournalListItem[];
-        setJournals(data);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
+    void loadJournals();
+  }, [loadJournals, pathname]);
+
+  useEffect(() => {
+    const onPagesChanged = () => {
+      void loadJournals();
     };
-  }, []);
+    window.addEventListener(PAGES_CHANGED_EVENT, onPagesChanged);
+    return () => window.removeEventListener(PAGES_CHANGED_EVENT, onPagesChanged);
+  }, [loadJournals]);
 
   const existingDates = useMemo(
     () => journalDatesFromList(journals),
