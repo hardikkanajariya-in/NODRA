@@ -62,11 +62,11 @@ export function GraphManageControls({
         setError(data.error ?? "Could not delete graph");
         return;
       }
-      setDeleteOpen(false);
       router.push("/graphs");
       router.refresh();
     } finally {
       setBusy(false);
+      setDeleteOpen(false);
     }
   }
 

@@ -14,7 +14,7 @@ import {
   subMonths,
 } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Props = {
   open: boolean;
@@ -47,6 +47,15 @@ export function JournalPickerDialog({
     const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
     return eachDayOfInterval({ start: gridStart, end: gridEnd });
   }, [viewMonth]);
+
+  useEffect(() => {
+    if (!open) {
+      setSelected(new Set());
+      setError("");
+      setBusy(false);
+      setViewMonth(startOfMonth(today));
+    }
+  }, [open, today]);
 
   if (!open) return null;
 

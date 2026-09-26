@@ -52,12 +52,12 @@ export function JournalDayHeader({
     try {
       const res = await fetch(`/api/pages/${pageId}`, { method: "DELETE" });
       if (res.ok) {
-        setDeleteOpen(false);
         router.push("/journal");
         router.refresh();
       }
     } finally {
       setBusy(false);
+      setDeleteOpen(false);
     }
   }
 

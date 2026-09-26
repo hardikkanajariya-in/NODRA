@@ -1,10 +1,11 @@
 "use client";
 
 import { format, parseISO } from "date-fns";
-import { CalendarPlus, ChevronRight, Loader2 } from "lucide-react";
+import { CalendarPlus, ChevronRight, Loader2, Trash2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ClientNavLink } from "@/components/shell/client-nav-link";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   JournalPickerDialog,
   createJournalsForDates,
@@ -69,6 +70,12 @@ function monthKeyFromPathname(pathname: string): string | null {
   return match?.[1] ?? null;
 }
 
+type DeleteTarget = {
+  id: string;
+  name: string;
+  href: string;
+};
+
 export function JournalSidebarSection({ onClose, navClass }: Props) {
   const pathname = usePathname();
   const router = useRouter();
@@ -83,6 +90,8 @@ export function JournalSidebarSection({ onClose, navClass }: Props) {
   const [collapsedPinnedMonths, setCollapsedPinnedMonths] = useState<
     Set<string>
   >(() => new Set());
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   const activeMonth = monthKeyFromPathname(pathname);
 
@@ -124,6 +133,20 @@ export function JournalSidebarSection({ onClose, navClass }: Props) {
     [journals, today],
   );
 
+  const todayJournal = useMemo(() => {
+    for (const j of journals) {
+      const dateStr = journalDateStr(j);
+      if (dateStr === today) {
+        return {
+          id: j.id,
+          name: j.name,
+          href: `/journal/${today}`,
+        };
+      }
+    }
+    return null;
+  }, [journals, today]);
+
   function isMonthOpen(key: string) {
     const pinned = key === todayMonth || key === activeMonth;
     if (pinned) return !collapsedPinnedMonths.has(key);
@@ -159,6 +182,62 @@ export function JournalSidebarSection({ onClose, navClass }: Props) {
     }
   }
 
+  async function confirmDeleteJournal() {
+    if (!deleteTarget) return;
+    setDeleteBusy(true);
+    try {
+      const res = await fetch(`/api/pages/${deleteTarget.id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        if (pathname === deleteTarget.href) {
+          router.push("/journal");
+        }
+        await loadJournals();
+        router.refresh();
+      }
+    } finally {
+      setDeleteBusy(false);
+      setDeleteTarget(null);
+    }
+  }
+
+  function renderJournalRow(item: DeleteTarget & { label: string }) {
+    const active = pathname === item.href;
+    return (
+      <div
+        key={item.id}
+        className={`nodra-journal-sidebar-row group ${active ? "nodra-journal-sidebar-row--active" : ""}`}
+      >
+        <ClientNavLink
+          href={item.href}
+          className={`${navClass(active)} nodra-journal-day-link min-w-0 flex-1`}
+          onClick={onClose}
+          title={item.name}
+        >
+          <span className="truncate">{item.label}</span>
+        </ClientNavLink>
+        <button
+          type="button"
+          className="nodra-journal-sidebar-delete"
+          aria-label={`Delete journal ${item.name}`}
+          title="Delete journal"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setDeleteTarget({
+              id: item.id,
+              name: item.name,
+              href: item.href,
+            });
+          }}
+        >
+          <Trash2 size={13} aria-hidden />
+        </button>
+      </div>
+    );
+  }
+
   return (
     <>
       <p className="nodra-sidebar-label flex items-center justify-between px-2.5 pb-1">
@@ -181,13 +260,17 @@ export function JournalSidebarSection({ onClose, navClass }: Props) {
         >
           All journals
         </ClientNavLink>
-        <ClientNavLink
-          href={`/journal/${today}`}
-          className={`${navClass(pathname === `/journal/${today}`)} nodra-nav-nested`}
-          onClick={onClose}
-        >
-          Today
-        </ClientNavLink>
+        {todayJournal ? (
+          renderJournalRow({ ...todayJournal, label: "Today" })
+        ) : (
+          <ClientNavLink
+            href={`/journal/${today}`}
+            className={`${navClass(pathname === `/journal/${today}`)} nodra-nav-nested`}
+            onClick={onClose}
+          >
+            Today
+          </ClientNavLink>
+        )}
         {loading ? (
           <p className="nodra-nav-item flex items-center gap-2 px-2.5 py-2 text-xs text-[var(--nodra-muted)] nodra-nav-nested">
             <Loader2 size={14} className="animate-spin" aria-hidden />
@@ -221,19 +304,14 @@ export function JournalSidebarSection({ onClose, navClass }: Props) {
                   </button>
                   {open && (
                     <div className="nodra-journal-month-days">
-                      {group.items.map((item) => (
-                        <ClientNavLink
-                          key={item.id}
-                          href={item.href}
-                          className={`${navClass(pathname === item.href)} nodra-journal-day-link`}
-                          onClick={onClose}
-                          title={item.name}
-                        >
-                          <span className="truncate">
-                            {journalDayLabel(item.dateStr)}
-                          </span>
-                        </ClientNavLink>
-                      ))}
+                      {group.items.map((item) =>
+                        renderJournalRow({
+                          id: item.id,
+                          name: item.name,
+                          href: item.href,
+                          label: journalDayLabel(item.dateStr),
+                        }),
+                      )}
                     </div>
                   )}
                 </div>
@@ -248,6 +326,24 @@ export function JournalSidebarSection({ onClose, navClass }: Props) {
         existingDates={existingDates}
         onClose={() => setPickerOpen(false)}
         onCreate={onCreateDates}
+      />
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete this journal?"
+        description={
+          <>
+            Permanently deletes{" "}
+            <span className="font-medium text-[var(--nodra-fg)]">
+              {deleteTarget?.name}
+            </span>
+            , its document, links, and uploaded images. This cannot be undone.
+          </>
+        }
+        confirmLabel="Delete journal"
+        loading={deleteBusy}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => void confirmDeleteJournal()}
       />
     </>
   );

@@ -57,11 +57,11 @@ export function JournalFeedSection({
     try {
       const res = await fetch(`/api/pages/${entry.id}`, { method: "DELETE" });
       if (res.ok) {
-        setDeleteOpen(false);
         router.refresh();
       }
     } finally {
       setBusy(false);
+      setDeleteOpen(false);
     }
   }
 
