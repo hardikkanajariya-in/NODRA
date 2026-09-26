@@ -1,7 +1,9 @@
 import { Extension } from "@tiptap/core";
+import type { CommandProps } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
+import type { EditorState, Transaction } from "@tiptap/pm/state";
 
 const collapsePluginKey = new PluginKey("logseqListCollapse");
 
@@ -12,8 +14,50 @@ function listItemHasNestedList(node: ProseMirrorNode): boolean {
   return false;
 }
 
+function transactionSetAllListCollapse(
+  state: EditorState,
+  collapsed: boolean,
+): Transaction | null {
+  const { tr } = state;
+  let changed = false;
+
+  state.doc.descendants((node, pos) => {
+    if (node.type.name !== "listItem") return;
+    if (!listItemHasNestedList(node)) return;
+    if (Boolean(node.attrs.collapsed) === collapsed) return;
+    tr.setNodeMarkup(pos, undefined, {
+      ...node.attrs,
+      collapsed,
+    });
+    changed = true;
+  });
+
+  return changed ? tr : null;
+}
+
 export const LogseqListCollapse = Extension.create({
   name: "logseqListCollapse",
+
+  addCommands() {
+    return {
+      collapseAllNestedBlocks:
+        () =>
+        ({ state, dispatch }: CommandProps) => {
+          const tr = transactionSetAllListCollapse(state, true);
+          if (!tr) return false;
+          dispatch?.(tr);
+          return true;
+        },
+      expandAllNestedBlocks:
+        () =>
+        ({ state, dispatch }: CommandProps) => {
+          const tr = transactionSetAllListCollapse(state, false);
+          if (!tr) return false;
+          dispatch?.(tr);
+          return true;
+        },
+    };
+  },
 
   addProseMirrorPlugins() {
     return [

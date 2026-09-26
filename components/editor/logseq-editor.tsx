@@ -25,6 +25,10 @@ import {
   DOCUMENT_UPDATED_EVENT,
   type DocumentUpdatedDetail,
 } from "@/lib/realtime/client";
+import {
+  JOURNAL_OUTLINE_SET_COLLAPSED_EVENT,
+  type JournalOutlineSetCollapsedDetail,
+} from "@/lib/editor/journal-outline-controls";
 
 type Props = {
   pageId: string;
@@ -251,6 +255,33 @@ export function LogseqEditor({
     window.addEventListener(DOCUMENT_UPDATED_EVENT, onRemote);
     return () => window.removeEventListener(DOCUMENT_UPDATED_EVENT, onRemote);
   }, [pageId, applyRemoteContent]);
+
+  useEffect(() => {
+    if (variant !== "journal") return;
+
+    const onOutlineCollapse = (event: Event) => {
+      const detail = (event as CustomEvent<JournalOutlineSetCollapsedDetail>)
+        .detail;
+      if (detail.pageId !== pageId) return;
+      const ed = editorRef.current;
+      if (!ed) return;
+      if (detail.collapsed) {
+        ed.commands.collapseAllNestedBlocks();
+      } else {
+        ed.commands.expandAllNestedBlocks();
+      }
+    };
+
+    window.addEventListener(
+      JOURNAL_OUTLINE_SET_COLLAPSED_EVENT,
+      onOutlineCollapse,
+    );
+    return () =>
+      window.removeEventListener(
+        JOURNAL_OUTLINE_SET_COLLAPSED_EVENT,
+        onOutlineCollapse,
+      );
+  }, [pageId, variant]);
 
   return (
     <div className="nodra-editor-wrap relative">

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { PageEditor } from "@/components/editor/page-editor";
 import { JournalDayHeader } from "@/components/journal/journal-day-header";
+import { JournalOutlineToolbar } from "@/components/journal/journal-outline-toolbar";
 
 type Props = {
   pageId: string;
@@ -22,11 +23,14 @@ export function JournalDayView({ pageId, name, contentJson }: Props) {
         onToggleCollapse={() => setCollapsed((c) => !c)}
       />
       {!collapsed && (
-        <PageEditor
-          pageId={pageId}
-          initialContent={contentJson}
-          variant="journal"
-        />
+        <>
+          <JournalOutlineToolbar pageId={pageId} />
+          <PageEditor
+            pageId={pageId}
+            initialContent={contentJson}
+            variant="journal"
+          />
+        </>
       )}
     </section>
   );

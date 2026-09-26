@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PageEditor } from "@/components/editor/page-editor";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { JournalOutlineToolbar } from "@/components/journal/journal-outline-toolbar";
 import { dispatchPagesChanged } from "@/lib/realtime/client";
 
 type Props = {
@@ -127,11 +128,14 @@ export function JournalFeedSection({
         </div>
 
         {!collapsed && (
-          <PageEditor
-            pageId={entry.id}
-            initialContent={entry.contentJson}
-            variant="journal"
-          />
+          <>
+            <JournalOutlineToolbar pageId={entry.id} />
+            <PageEditor
+              pageId={entry.id}
+              initialContent={entry.contentJson}
+              variant="journal"
+            />
+          </>
         )}
 
         {showDivider && <hr className="nodra-journal-divider" />}
