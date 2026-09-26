@@ -6,14 +6,17 @@ import { useCallback, useEffect } from "react";
 import { useLogseqAssetLink } from "@/components/logseq/use-logseq-asset-link";
 import {
   LOGSEQ_ASSETS_FOLDER_EVENT,
-  logseqAssetsStatusLabel,
-  logseqAssetsStatusTitle,
+  logseqAssetsTopBarLabel,
+  logseqAssetsTopBarTitle,
 } from "@/lib/logseq/local-asset-folder";
 import { useActiveGraph } from "@/components/shell/active-graph-context";
 
 type Props = {
   graphId: string;
 };
+
+const statusClass =
+  "nodra-assets-status flex min-w-0 max-w-[11rem] items-center gap-1.5 text-xs sm:max-w-[16rem] md:max-w-[22rem] lg:max-w-[28rem]";
 
 export function LogseqAssetsTopBarStatus({ graphId }: Props) {
   const { name: graphName } = useActiveGraph();
@@ -51,11 +54,13 @@ export function LogseqAssetsTopBarStatus({ graphId }: Props) {
 
   if (!graphId) return null;
 
+  const title = `${logseqAssetsTopBarTitle(status, meta)}${error ? `\n\n${error}` : ""}`;
+
   if (supported === false) {
     return (
       <Link
         href="/settings#logseq-assets"
-        className="nodra-assets-status flex max-w-[8rem] items-center gap-1 truncate text-xs text-[var(--nodra-muted)] md:max-w-[14rem]"
+        className={`${statusClass} text-[var(--nodra-muted)]`}
         title="Assets linking is not available in this browser"
       >
         <FolderOpen size={14} className="shrink-0" aria-hidden />
@@ -64,8 +69,7 @@ export function LogseqAssetsTopBarStatus({ graphId }: Props) {
     );
   }
 
-  const label = logseqAssetsStatusLabel(status, meta);
-  const title = logseqAssetsStatusTitle(status, meta);
+  const label = busy ? "Linking…" : logseqAssetsTopBarLabel(status, meta);
   const tone =
     status === "ready"
       ? "text-[var(--nodra-muted)]"
@@ -79,15 +83,13 @@ export function LogseqAssetsTopBarStatus({ graphId }: Props) {
     return (
       <button
         type="button"
-        className={`nodra-assets-status flex max-w-[6rem] items-center gap-1 truncate text-xs md:max-w-[12rem] ${tone}`}
-        title={`${title}${error ? `\n${error}` : ""}`}
+        className={`${statusClass} ${tone}`}
+        title={title}
         disabled={busy || supported === null}
         onClick={() => void onActivate()}
       >
         <FolderOpen size={14} className="shrink-0" aria-hidden />
-        <span className="truncate">
-          {busy ? "Linking…" : label}
-        </span>
+        <span className="truncate font-medium">{label}</span>
       </button>
     );
   }
@@ -95,11 +97,25 @@ export function LogseqAssetsTopBarStatus({ graphId }: Props) {
   return (
     <Link
       href="/settings#logseq-assets"
-      className={`nodra-assets-status flex max-w-[6rem] items-center gap-1 truncate text-xs md:max-w-[12rem] ${tone}`}
+      className={`${statusClass} ${tone}`}
       title={title}
     >
       <FolderOpen size={14} className="shrink-0" aria-hidden />
-      <span className="truncate">{label}</span>
+      <span className="truncate">
+        {status === "ready" ? (
+          <>
+            <span className="font-medium text-[var(--nodra-fg)]">
+              Assets linked
+            </span>
+            <span className="hidden text-[var(--nodra-muted)] sm:inline">
+              {" · "}
+              {logseqAssetsTopBarLabel(status, meta)}
+            </span>
+          </>
+        ) : (
+          label
+        )}
+      </span>
     </Link>
   );
 }

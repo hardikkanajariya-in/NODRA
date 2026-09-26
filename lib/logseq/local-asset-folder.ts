@@ -423,6 +423,67 @@ export async function resolveLocalAssetFile(
   return null;
 }
 
+export function humanizeAssetsPath(path: string): string {
+  return path
+    .replace(/%USERPROFILE%/gi, "~")
+    .replace(/%HOME%/gi, "~")
+    .replace(/\\/g, "/");
+}
+
+/** Last path segments for compact display (e.g. `…/Smile Konnect/assets`). */
+export function logseqAssetsPathTail(path: string, segmentCount = 2): string {
+  const human = humanizeAssetsPath(path);
+  const parts = human.split("/").filter(Boolean);
+  if (parts.length === 0) return human;
+  if (parts.length <= segmentCount) return parts.join("/");
+  return `…/${parts.slice(-segmentCount).join("/")}`;
+}
+
+/** Short top-bar text (not the full filesystem path). */
+export function logseqAssetsTopBarLabel(
+  status: LogseqAssetFolderStatus,
+  meta: LogseqAssetsFolderMeta | null,
+): string {
+  switch (status) {
+    case "ready": {
+      const path = linkedAssetsPathLabel(meta);
+      if (path) {
+        const tail = logseqAssetsPathTail(path, 3);
+        return tail.length <= 28 ? tail : logseqAssetsPathTail(path, 2);
+      }
+      return meta?.name ? `Linked: ${meta.name}` : "Assets linked";
+    }
+    case "denied":
+      return "Allow folder access";
+    case "not_linked":
+      return "Link assets folder";
+    case "unavailable":
+      return "Assets unavailable";
+  }
+}
+
+export function logseqAssetsTopBarTitle(
+  status: LogseqAssetFolderStatus,
+  meta: LogseqAssetsFolderMeta | null,
+): string {
+  const path = linkedAssetsPathLabel(meta);
+  const human = path ? humanizeAssetsPath(path) : null;
+  switch (status) {
+    case "ready":
+      return human
+        ? `Logseq assets folder on this device:\n${human}\n\nClick to open Settings.`
+        : "Logseq assets folder is linked on this device.";
+    case "denied":
+      return human
+        ? `Folder access expired:\n${human}\n\nClick to allow access again.`
+        : "Allow folder access again.";
+    case "not_linked":
+      return "Link this graph's Logseq assets folder on this device.";
+    default:
+      return "Assets linking is not available in this browser.";
+  }
+}
+
 export function logseqAssetsStatusLabel(
   status: LogseqAssetFolderStatus,
   meta: LogseqAssetsFolderMeta | null,
@@ -431,7 +492,7 @@ export function logseqAssetsStatusLabel(
     case "ready": {
       const path = linkedAssetsPathLabel(meta);
       if (path) {
-        return path.length > 36 ? `${path.slice(0, 16)}…${path.slice(-16)}` : path;
+        return humanizeAssetsPath(path);
       }
       return "Assets linked";
     }
