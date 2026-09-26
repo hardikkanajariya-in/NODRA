@@ -45,6 +45,7 @@ export function outlinePasteRange(
 ): { from: number; to: number } | null {
   const clamped = Math.max(0, Math.min(pos, doc.content.size));
   const $pos = doc.resolve(clamped);
+
   for (let depth = $pos.depth; depth > 0; depth--) {
     if ($pos.node(depth).type.name !== "listItem") continue;
     const from = $pos.before(depth);
@@ -53,5 +54,24 @@ export function outlinePasteRange(
     if (isEmptyListItem(item)) return { from, to };
     return { from: to, to };
   }
+
+  // Cursor after a list item but still inside the bullet list (common at EOL).
+  for (let depth = $pos.depth; depth > 0; depth--) {
+    if ($pos.node(depth).type.name === "bulletList") {
+      return { from: clamped, to: clamped };
+    }
+  }
+
+  // Doc-level gap: append as siblings at the end of the last bullet list.
+  let lastBulletListEnd: number | null = null;
+  doc.descendants((node, position) => {
+    if (node.type.name === "bulletList") {
+      lastBulletListEnd = position + node.nodeSize - 1;
+    }
+  });
+  if (lastBulletListEnd != null) {
+    return { from: lastBulletListEnd, to: lastBulletListEnd };
+  }
+
   return null;
 }

@@ -47,10 +47,10 @@ export function handleLogseqPaste(
       s.includes("<li"),
   );
 
-  if (!looksLogseq && !hasImageFile && !text) return false;
+  if (!looksLogseq && !hasImageFile) return false;
 
   event.preventDefault();
-  void processPaste(editor, clipboard, pageId, upload, hasImageFile);
+  void processPaste(editor, clipboard, pageId, upload, hasImageFile, text);
   return true;
 }
 
@@ -72,6 +72,7 @@ async function processPaste(
   pageId: string,
   upload?: UploadHandlers,
   hasClipboardImages = false,
+  plainText = "",
 ) {
   const pool = await buildImagePool(clipboard);
 
@@ -103,10 +104,14 @@ async function processPaste(
       resolveLocalFile: folderReady ? resolveLocalAssetFile : undefined,
     });
   } catch {
+    if (plainText.trim()) await insertPlainOutlinePasteAsync(editor, plainText);
     return;
   }
 
-  if (!insertPreparedContent(editor, prepared.content)) return;
+  if (!insertPreparedContent(editor, prepared.content)) {
+    if (plainText.trim()) await insertPlainOutlinePasteAsync(editor, plainText);
+    return;
+  }
   if (!prepared.jobs.length) return;
 
   upload?.onUploadStart?.();
@@ -149,15 +154,45 @@ async function processPaste(
 }
 
 function insertPreparedContent(editor: Editor, content: JsonNode[]): boolean {
+  return applyOutlineInsert(editor, content);
+}
+
+async function insertPlainOutlinePasteAsync(
+  editor: Editor,
+  text: string,
+): Promise<boolean> {
+  const pool = { byName: new Map<string, File>(), ordered: [] as File[] };
+  const clip = {
+    types: ["text/plain"],
+    getData: (type: string) => (type === "text/plain" ? text : ""),
+    files: [],
+    items: [],
+  } as unknown as DataTransfer;
+  const prepared = await prepareLogseqPaste(clip, pool);
+  return applyOutlineInsert(editor, prepared.content);
+}
+
+function applyOutlineInsert(editor: Editor, content: JsonNode[]): boolean {
   try {
+    const before = editor.state.doc;
     const items = listItemsFromPaste(content);
     const range = items
       ? outlinePasteRange(editor.state.doc, editor.state.selection.from)
       : null;
+
     if (items && range) {
-      return editor.chain().focus().insertContentAt(range, items).run();
+      editor.chain().focus().insertContentAt(range, items).run();
+    } else if (items) {
+      editor
+        .chain()
+        .focus()
+        .insertContent({ type: "bulletList", content: items })
+        .run();
+    } else {
+      editor.chain().focus().insertContent(content).run();
     }
-    return editor.chain().focus().insertContent(content).run();
+
+    return !editor.state.doc.eq(before);
   } catch {
     return false;
   }
