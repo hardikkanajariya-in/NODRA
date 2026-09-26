@@ -66,6 +66,7 @@ summary,
 .nodra-sidebar-inline-btn,
 .nodra-journal-picker-day:not(:disabled),
 .nodra-journal-picker-link-btn,
+.nodra-journal-month-toggle,
 .nodra-dialog-btn,
 .nodra-assets-status {
   cursor: pointer;
@@ -384,9 +385,59 @@ textarea,
 }
 
 .nodra-journal-sidebar-list {
-  max-height: min(30vh, 13rem);
+  max-height: min(36vh, 16rem);
   overflow-y: auto;
   margin-bottom: 0.25rem;
+  margin-top: 0.15rem;
+}
+
+.nodra-journal-month-group + .nodra-journal-month-group {
+  margin-top: 0.15rem;
+}
+
+.nodra-journal-month-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.3rem 0.35rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--nodra-muted);
+  text-align: left;
+}
+
+.nodra-journal-month-toggle:hover {
+  background: var(--nodra-nav-active);
+  color: var(--nodra-fg);
+}
+
+.nodra-journal-month-chevron {
+  transition: transform 0.12s ease;
+}
+
+.nodra-journal-month-chevron--open {
+  transform: rotate(90deg);
+}
+
+.nodra-journal-month-count {
+  margin-left: auto;
+  font-size: 0.625rem;
+  font-weight: 500;
+  color: var(--nodra-muted);
+}
+
+.nodra-journal-month-days {
+  margin-left: 0.35rem;
+  padding-left: 0.35rem;
+  border-left: 1px solid var(--nodra-border);
+}
+
+.nodra-journal-day-link {
+  padding-top: 0.28rem !important;
+  padding-bottom: 0.28rem !important;
+  font-size: 0.8125rem !important;
 }
 
 .nodra-dialog-backdrop {
