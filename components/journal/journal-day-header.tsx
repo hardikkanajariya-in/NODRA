@@ -1,9 +1,10 @@
 "use client";
 
-import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { JournalSectionActions } from "@/components/journal/journal-section-actions";
 import { dispatchPagesChanged } from "@/lib/realtime/client";
 
 type Props = {
@@ -65,11 +66,11 @@ export function JournalDayHeader({
 
   return (
     <>
-      <div className="nodra-journal-section-head group mb-1 flex items-start gap-0.5">
+      <div className="nodra-journal-section-head group mb-1 flex items-center gap-1">
         {onToggleCollapse && (
           <button
             type="button"
-            className="nodra-icon-btn mt-1 shrink-0"
+            className="nodra-icon-btn shrink-0"
             onClick={onToggleCollapse}
             aria-expanded={!collapsed}
           >
@@ -105,14 +106,12 @@ export function JournalDayHeader({
             </button>
           )}
         </div>
-        <button
-          type="button"
-          className="nodra-icon-btn shrink-0 text-[var(--nodra-danger)] opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
-          onClick={() => setDeleteOpen(true)}
-          aria-label="Delete journal"
-        >
-          <Trash2 size={16} />
-        </button>
+        <JournalSectionActions
+          pageId={pageId}
+          showOutlineControls={!collapsed}
+          onDelete={() => setDeleteOpen(true)}
+          deleteAriaLabel="Delete journal"
+        />
       </div>
 
       <ConfirmDialog

@@ -1,11 +1,11 @@
 "use client";
 
-import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PageEditor } from "@/components/editor/page-editor";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { JournalOutlineToolbar } from "@/components/journal/journal-outline-toolbar";
+import { JournalSectionActions } from "@/components/journal/journal-section-actions";
 import { dispatchPagesChanged } from "@/lib/realtime/client";
 
 type Props = {
@@ -74,10 +74,10 @@ export function JournalFeedSection({
         id={`journal-${entry.slug}`}
         className="nodra-journal-section group"
       >
-        <div className="nodra-journal-section-head sticky top-0 z-10 flex items-start gap-0.5 bg-[var(--nodra-main)] py-1.5">
+        <div className="nodra-journal-section-head sticky top-0 z-10 flex items-center gap-1 bg-[var(--nodra-main)] py-1.5">
           <button
             type="button"
-            className="nodra-icon-btn mt-0.5 shrink-0"
+            className="nodra-icon-btn shrink-0"
             onClick={() => setCollapsed((c) => !c)}
             aria-expanded={!collapsed}
             aria-label={collapsed ? "Expand journal" : "Collapse journal"}
@@ -116,26 +116,20 @@ export function JournalFeedSection({
             )}
           </div>
 
-          <button
-            type="button"
-            className="nodra-icon-btn shrink-0 text-[var(--nodra-danger)] opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
-            onClick={() => setDeleteOpen(true)}
-            aria-label={`Delete journal ${title}`}
-            title="Delete journal"
-          >
-            <Trash2 size={16} />
-          </button>
+          <JournalSectionActions
+            pageId={entry.id}
+            showOutlineControls={!collapsed}
+            onDelete={() => setDeleteOpen(true)}
+            deleteAriaLabel={`Delete journal ${title}`}
+          />
         </div>
 
         {!collapsed && (
-          <>
-            <JournalOutlineToolbar pageId={entry.id} />
-            <PageEditor
-              pageId={entry.id}
-              initialContent={entry.contentJson}
-              variant="journal"
-            />
-          </>
+          <PageEditor
+            pageId={entry.id}
+            initialContent={entry.contentJson}
+            variant="journal"
+          />
         )}
 
         {showDivider && <hr className="nodra-journal-divider" />}
