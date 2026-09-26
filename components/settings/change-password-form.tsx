@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export function ChangePasswordForm() {
   const router = useRouter();
@@ -49,9 +50,7 @@ export function ChangePasswordForm() {
       <h2 className="text-sm font-medium">Change password</h2>
       <label className="block text-sm">
         Current password
-        <input
-          type="password"
-          className="nodra-input mt-1 w-full"
+        <PasswordInput
           value={currentPassword}
           onChange={(e) => setCurrentPassword(e.target.value)}
           autoComplete="current-password"
@@ -59,9 +58,7 @@ export function ChangePasswordForm() {
       </label>
       <label className="block text-sm">
         New password
-        <input
-          type="password"
-          className="nodra-input mt-1 w-full"
+        <PasswordInput
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
           autoComplete="new-password"
@@ -69,9 +66,7 @@ export function ChangePasswordForm() {
       </label>
       <label className="block text-sm">
         Confirm new password
-        <input
-          type="password"
-          className="nodra-input mt-1 w-full"
+        <PasswordInput
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           autoComplete="new-password"

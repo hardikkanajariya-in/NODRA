@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -59,10 +60,8 @@ export default function LoginPage() {
         <label className="mt-4 block text-sm" htmlFor="password">
           Password
         </label>
-        <input
+        <PasswordInput
           id="password"
-          type="password"
-          className="nodra-input mt-1 w-full"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="current-password"

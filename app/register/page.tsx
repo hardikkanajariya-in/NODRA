@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -62,10 +63,8 @@ export default function RegisterPage() {
         <label className="mt-4 block text-sm" htmlFor="password">
           Password
         </label>
-        <input
+        <PasswordInput
           id="password"
-          type="password"
-          className="nodra-input mt-1 w-full"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="new-password"
@@ -73,10 +72,8 @@ export default function RegisterPage() {
         <label className="mt-4 block text-sm" htmlFor="confirmPassword">
           Confirm password
         </label>
-        <input
+        <PasswordInput
           id="confirmPassword"
-          type="password"
-          className="nodra-input mt-1 w-full"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           autoComplete="new-password"
