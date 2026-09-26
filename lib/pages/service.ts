@@ -13,6 +13,7 @@ import {
   notifyDocumentUpdated,
   notifyPagesChanged,
 } from "@/lib/realtime/publish";
+import { syncPageAssetsFromDocument, deleteAllPageAssets } from "@/lib/assets/service";
 
 export async function listPages(graphId: string) {
   return db.query.pages.findMany({
@@ -144,6 +145,7 @@ export async function updatePageName(id: string, name: string) {
 
 export async function deletePage(id: string) {
   const page = await getPageById(id);
+  await deleteAllPageAssets(id);
   await db.delete(pages).where(eq(pages.id, id));
   if (page) {
     await notifyPagesChanged(page.graphId);
@@ -191,6 +193,8 @@ export async function saveDocument(
     .where(eq(pages.id, pageId));
 
   await syncLinksForPage(page.graphId, pageId, plainText);
+
+  await syncPageAssetsFromDocument(pageId, contentJson);
 
   await notifyDocumentUpdated(page.graphId, pageId, savedAt);
 

@@ -2,6 +2,7 @@ import {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
+  DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 
 function getClient() {
@@ -61,6 +62,21 @@ export async function getFromR2(key: string) {
     body: Buffer.from(bytes),
     mimeType: result.ContentType ?? "application/octet-stream",
   };
+}
+
+export async function deleteFromR2(key: string): Promise<void> {
+  if (!isR2Configured()) return;
+
+  const bucket = process.env.R2_BUCKET;
+  if (!bucket) return;
+
+  const client = getClient();
+  await client.send(
+    new DeleteObjectCommand({
+      Bucket: bucket,
+      Key: key,
+    }),
+  );
 }
 
 export function isR2Configured(): boolean {
