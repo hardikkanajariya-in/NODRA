@@ -280,6 +280,10 @@ body {
   padding: 0.15rem 0 0.35rem;
 }
 
+.nodra-journal-section-head {
+  align-items: flex-start;
+}
+
 .nodra-journal-divider {
   border: none;
   border-top: 1px solid var(--nodra-border);

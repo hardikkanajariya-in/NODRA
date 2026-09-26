@@ -143,6 +143,25 @@ export async function updatePageName(id: string, name: string) {
   return updated;
 }
 
+export async function updateJournalTitle(id: string, name: string) {
+  const trimmed = name.trim();
+  if (!trimmed) return null;
+
+  const page = await getPageById(id);
+  if (!page || page.type !== "journal") return null;
+
+  const [updated] = await db
+    .update(pages)
+    .set({ name: trimmed, updatedAt: new Date() })
+    .where(eq(pages.id, id))
+    .returning();
+
+  if (updated) {
+    await notifyPagesChanged(updated.graphId);
+  }
+  return updated;
+}
+
 export async function deletePage(id: string) {
   const page = await getPageById(id);
   await deleteAllPageAssets(id);

@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
-import { PageEditor } from "@/components/editor/page-editor";
+import { format } from "date-fns";
+import { useEffect, useMemo } from "react";
+import {
+  JournalFeedSection,
+} from "@/components/journal/journal-feed-section";
 
 export type JournalFeedEntry = {
   id: string;
@@ -15,34 +18,24 @@ type Props = {
 };
 
 export function JournalFeedView({ entries }: Props) {
+  const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
+
   useEffect(() => {
-    const today = new Date().toISOString().slice(0, 10);
     const el = document.getElementById(`journal-${today}`);
     if (el) {
       el.scrollIntoView({ block: "start" });
     }
-  }, [entries]);
+  }, [entries, today]);
 
   return (
     <div className="nodra-journal-feed nodra-journal-feed--scroll mx-auto max-w-3xl px-6 py-3 md:px-10">
       {entries.map((entry, index) => (
-        <section
+        <JournalFeedSection
           key={entry.id}
-          id={`journal-${entry.slug}`}
-          className="nodra-journal-section"
-        >
-          <h2 className="nodra-journal-date sticky top-0 z-10 bg-[var(--nodra-main)] py-2">
-            {entry.name}
-          </h2>
-          <PageEditor
-            pageId={entry.id}
-            initialContent={entry.contentJson}
-            variant="journal"
-          />
-          {index < entries.length - 1 && (
-            <hr className="nodra-journal-divider" />
-          )}
-        </section>
+          entry={entry}
+          defaultCollapsed={entry.slug !== today}
+          showDivider={index < entries.length - 1}
+        />
       ))}
     </div>
   );
