@@ -71,7 +71,7 @@ export function JournalFeedSection({
         id={`journal-${entry.slug}`}
         className="nodra-journal-section group"
       >
-        <div className="nodra-journal-section-head sticky top-0 z-10 flex items-start gap-1 bg-[var(--nodra-main)] py-2">
+        <div className="nodra-journal-section-head sticky top-0 z-10 flex items-start gap-0.5 bg-[var(--nodra-main)] py-1.5">
           <button
             type="button"
             className="nodra-icon-btn mt-0.5 shrink-0"

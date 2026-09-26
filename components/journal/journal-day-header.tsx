@@ -63,7 +63,7 @@ export function JournalDayHeader({
 
   return (
     <>
-      <div className="nodra-journal-section-head group mb-2 flex items-start gap-1">
+      <div className="nodra-journal-section-head group mb-1 flex items-start gap-0.5">
         {onToggleCollapse && (
           <button
             type="button"

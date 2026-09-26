@@ -39,7 +39,7 @@ export default async function NotebookPagePage({ params }: Props) {
     const loaded = page;
 
     return (
-      <div className="nodra-content mx-auto max-w-3xl px-8 py-6">
+      <div className="nodra-content nodra-main-content py-6">
         <PageTitle pageId={loaded.id} name={loaded.name} />
         <PageEditor
           pageId={loaded.id}

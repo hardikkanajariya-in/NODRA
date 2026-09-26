@@ -2,29 +2,36 @@
 
 :root,
 [data-theme="light"] {
+  --nodra-font: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --nodra-toolbar-h: 2.75rem;
   --nodra-sidebar-w: 15.5rem;
   --nodra-bg: #f7f7f7;
   --nodra-main: #ffffff;
-  --nodra-sidebar: #f3f3f3;
+  --nodra-sidebar: #eef0f2;
   --nodra-border: #e8e8e8;
-  --nodra-fg: #24292e;
-  --nodra-muted: #6a737d;
+  --nodra-fg: #384145;
+  --nodra-block-text: #434343;
+  --nodra-muted: #9aa0a6;
   --nodra-accent: #045591;
   --nodra-link: #045591;
   --nodra-tag: #5c3c8b;
   --nodra-danger: #cb2431;
-  --nodra-bullet: #9aa0a6;
+  --nodra-bullet: #787c7e;
   --nodra-nav-active: #e8e8e8;
-  --nodra-block-hover: rgba(0, 0, 0, 0.04);
+  --nodra-block-hover: rgba(0, 0, 0, 0.035);
+  --nodra-content-max: 56.25rem;
 }
 
 [data-theme="dark"] {
+  --nodra-font: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --nodra-bg: #16181c;
   --nodra-main: #1e2127;
   --nodra-sidebar: #14161a;
   --nodra-border: #2d3139;
   --nodra-fg: #e6e8eb;
+  --nodra-block-text: #d4d7dc;
   --nodra-muted: #9aa3b2;
   --nodra-accent: #3b82f6;
   --nodra-link: #60a5fa;
@@ -39,7 +46,10 @@ body {
   background: var(--nodra-bg);
   color: var(--nodra-fg);
   caret-color: var(--nodra-fg);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--nodra-font);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
 .nodra-app {
@@ -216,6 +226,8 @@ body {
 
 .nodra-nav-item {
   color: var(--nodra-fg);
+  font-size: 0.9375rem;
+  line-height: 1.4;
 }
 .nodra-nav-item:hover {
   background: var(--nodra-nav-active);
@@ -261,18 +273,37 @@ body {
   color: var(--nodra-fg);
 }
 
+.nodra-main-content {
+  max-width: var(--nodra-content-max);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.125rem;
+  padding-right: 1.125rem;
+}
+
+@media (min-width: 768px) {
+  .nodra-main-content {
+    padding-left: 1.75rem;
+    padding-right: 1.75rem;
+  }
+}
+
 .nodra-page-title {
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 1.75rem;
+  font-family: var(--nodra-font);
+  font-size: 2rem;
   line-height: 1.25;
-  font-weight: 400;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--nodra-fg);
 }
 
 .nodra-journal-date {
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 1.75rem;
-  font-weight: 400;
-  margin: 0 0 0.5rem;
+  font-family: var(--nodra-font);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.2rem;
   color: var(--nodra-fg);
 }
 
@@ -284,10 +315,21 @@ body {
   align-items: flex-start;
 }
 
+.nodra-journal-section-head .nodra-icon-btn {
+  margin-top: 0.15rem;
+  padding: 0.15rem;
+  color: var(--nodra-muted);
+}
+
+.nodra-journal-section-head .nodra-icon-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
 .nodra-journal-divider {
   border: none;
   border-top: 1px solid var(--nodra-border);
-  margin: 0.65rem 0 0.35rem;
+  margin: 1.25rem 0 0.5rem;
 }
 
 .nodra-journal-feed {
@@ -295,9 +337,9 @@ body {
 }
 
 .nodra-journal-feed--scroll .nodra-journal-date {
-  font-size: 1.375rem;
-  margin: 0.75rem 0 0.15rem;
-  padding: 0.35rem 0;
+  font-size: 1.25rem;
+  margin: 0.65rem 0 0.1rem;
+  padding: 0.25rem 0;
 }
 
 .nodra-journal-feed--scroll .nodra-journal-section:first-child .nodra-journal-date {
@@ -358,8 +400,11 @@ body {
 }
 
 .nodra-editor-prose {
+  font-family: var(--nodra-font);
   font-size: 1rem;
-  line-height: 1.65;
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--nodra-block-text);
   min-height: 1.5rem;
   caret-color: var(--nodra-fg);
 }
@@ -380,13 +425,13 @@ body {
 
 .nodra-editor-prose ul:not([data-type="taskList"]) > li {
   position: relative;
-  padding: 0.125rem 0 0.125rem 1.5rem;
+  padding: 0.05rem 0 0.05rem 1.35rem;
   margin: 0;
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 .nodra-editor-prose ul:not([data-type="taskList"]) > li:has(> ul) {
-  padding-left: 2.35rem;
+  padding-left: 2.15rem;
 }
 
 .nodra-editor-prose li[data-collapsed="true"] > ul {
@@ -447,23 +492,24 @@ body {
 .nodra-editor-prose ul:not([data-type="taskList"]) > li::before {
   content: "";
   position: absolute;
-  left: 0.55rem;
-  top: 0.78em;
-  width: 6px;
-  height: 6px;
+  left: 0.4rem;
+  top: 0.72em;
+  width: 5px;
+  height: 5px;
   border-radius: 999px;
   background: var(--nodra-bullet);
+  opacity: 0.9;
 }
 
 .nodra-editor-prose ul:not([data-type="taskList"]) li ul {
-  margin-left: 0.35rem;
-  border-left: 1px solid var(--nodra-border);
-  padding-left: 0.5rem;
+  margin-left: 0.25rem;
+  border-left: 1px solid color-mix(in srgb, var(--nodra-border) 85%, transparent);
+  padding-left: 0.45rem;
 }
 
 .nodra-editor-prose p {
   margin: 0;
-  min-height: 1.65em;
+  min-height: 1.5em;
 }
 
 .nodra-editor-prose ul[data-type="taskList"] {
