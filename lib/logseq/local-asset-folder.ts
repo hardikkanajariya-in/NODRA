@@ -1,7 +1,11 @@
+import { suggestLogseqAssetsPath } from "@/lib/logseq/assets-path-hints";
+
 const IDB_NAME = "nodra-fs";
 const IDB_STORE = "handles";
 const LEGACY_IDB_KEY = "logseq-assets-handle";
 const LEGACY_META_KEY = "nodra/logseq-assets-meta";
+const PROFILE_PICKER_ANCHOR_IDB = "logseq-profile-picker-anchor";
+const PROFILE_PICKER_ANCHOR_META = "nodra/logseq-profile-picker-meta";
 
 const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "gif", "svg"];
 
@@ -16,6 +20,13 @@ export type LogseqAssetFolderStatus =
 export type LogseqAssetsFolderMeta = {
   name: string;
   linkedAt: string;
+  displayPath?: string;
+};
+
+export type ProfilePickerAnchorMeta = {
+  name: string;
+  linkedAt: string;
+  displayPath?: string;
 };
 
 function idbKeyForGraph(graphId: string): string {
@@ -62,7 +73,9 @@ export function readLogseqAssetsMeta(
     const raw = localStorage.getItem(metaKeyForGraph(graphId));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as LogseqAssetsFolderMeta;
-    if (parsed?.name && parsed?.linkedAt) return parsed;
+    if (parsed?.name && parsed?.linkedAt) {
+      return parsed;
+    }
   } catch {
     // ignore
   }
@@ -80,6 +93,47 @@ function writeLogseqAssetsMeta(
     return;
   }
   localStorage.setItem(key, JSON.stringify(meta));
+}
+
+export function readProfilePickerAnchorMeta(): ProfilePickerAnchorMeta | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(PROFILE_PICKER_ANCHOR_META);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as ProfilePickerAnchorMeta;
+    if (parsed?.name && parsed?.linkedAt) return parsed;
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+function writeProfilePickerAnchorMeta(meta: ProfilePickerAnchorMeta | null) {
+  if (typeof localStorage === "undefined") return;
+  if (!meta) {
+    localStorage.removeItem(PROFILE_PICKER_ANCHOR_META);
+    return;
+  }
+  localStorage.setItem(PROFILE_PICKER_ANCHOR_META, JSON.stringify(meta));
+}
+
+export function updateLogseqAssetsDisplayPath(
+  graphId: string,
+  displayPath: string,
+): void {
+  const existing = readLogseqAssetsMeta(graphId);
+  if (!existing) return;
+  writeLogseqAssetsMeta(graphId, {
+    ...existing,
+    displayPath: displayPath.trim() || undefined,
+  });
+  notifyAssetsFolderChanged(graphId);
+}
+
+export function linkedAssetsPathLabel(meta: LogseqAssetsFolderMeta | null): string | null {
+  if (!meta) return null;
+  if (meta.displayPath?.trim()) return meta.displayPath.trim();
+  return meta.name ? meta.name : null;
 }
 
 function openIdb(): Promise<IDBDatabase> {
@@ -243,6 +297,109 @@ async function readFileFromDir(
   }
 }
 
+type DirectoryHandleWithEntries = FileSystemDirectoryHandle & {
+  values?: () => AsyncIterableIterator<[string, FileSystemHandle]>;
+};
+
+async function tryResolveDirectoryDisplayPath(
+  handle: FileSystemDirectoryHandle,
+): Promise<string | null> {
+  const dir = handle as DirectoryHandleWithEntries;
+  if (typeof dir.values !== "function") return null;
+
+  try {
+    for await (const [, entry] of dir.values()) {
+      if (entry.kind !== "file") continue;
+      const file = await (entry as FileSystemFileHandle).getFile();
+      const path = (file as File & { path?: string }).path;
+      if (typeof path === "string" && path.length > 0) {
+        return path.replace(/[/\\][^/\\]+$/, "");
+      }
+      break;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+async function resolveDisplayPathForLink(
+  pickedRoot: FileSystemDirectoryHandle,
+  graphName: string,
+): Promise<string> {
+  const assetsDir = await resolveAssetsDir(pickedRoot);
+  const fromProbe =
+    (await tryResolveDirectoryDisplayPath(assetsDir)) ??
+    (await tryResolveDirectoryDisplayPath(pickedRoot));
+  if (fromProbe) return fromProbe;
+  return suggestLogseqAssetsPath(graphName);
+}
+
+async function getProfilePickerAnchorHandle(): Promise<FileSystemDirectoryHandle | null> {
+  return idbGetRaw(PROFILE_PICKER_ANCHOR_IDB);
+}
+
+async function getDirectoryPickerStartIn(
+  graphId: string,
+): Promise<FileSystemDirectoryPickerOptions["startIn"]> {
+  const anchor = await getProfilePickerAnchorHandle();
+  if (anchor) return anchor;
+
+  const existing = await idbGetHandle(graphId);
+  if (existing) return existing;
+
+  return "documents";
+}
+
+export async function linkProfilePickerAnchor(): Promise<
+  "ready" | "unavailable" | "cancelled"
+> {
+  if (!isLogseqAssetPickerSupported()) return "unavailable";
+  let handle: FileSystemDirectoryHandle;
+  try {
+    handle = await window.showDirectoryPicker({
+      mode: "read",
+      id: "nodra-profile-picker-anchor",
+      startIn: "documents",
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      return "cancelled";
+    }
+    throw error;
+  }
+
+  await idbSetRaw(PROFILE_PICKER_ANCHOR_IDB, handle);
+  const displayPath =
+    (await tryResolveDirectoryDisplayPath(handle)) ?? handle.name;
+  writeProfilePickerAnchorMeta({
+    name: handle.name,
+    linkedAt: new Date().toISOString(),
+    displayPath,
+  });
+  await handle.requestPermission({ mode: "read" });
+  return "ready";
+}
+
+export async function unlinkProfilePickerAnchor(): Promise<void> {
+  await idbDeleteRaw(PROFILE_PICKER_ANCHOR_IDB);
+  writeProfilePickerAnchorMeta(null);
+}
+
+async function idbSetRaw(
+  key: string,
+  handle: FileSystemDirectoryHandle,
+): Promise<void> {
+  const db = await openIdb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, "readwrite");
+    const store = tx.objectStore(IDB_STORE);
+    const req = store.put(handle, key);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error ?? new Error("IndexedDB write failed"));
+  });
+}
+
 const cachedAssetsDir = new Map<
   string,
   { rootKey: string; dir: FileSystemDirectoryHandle }
@@ -297,23 +454,30 @@ export async function ensureLogseqAssetPermission(
 
 export async function linkLogseqAssetsFolder(
   graphId: string,
+  graphName: string,
 ): Promise<LogseqAssetFolderStatus> {
   if (!graphId) return "not_linked";
   if (!isLogseqAssetPickerSupported()) return "unavailable";
   let root: FileSystemDirectoryHandle;
   try {
-    root = await window.showDirectoryPicker({ mode: "read" });
+    root = await window.showDirectoryPicker({
+      mode: "read",
+      id: `nodra-logseq-assets-${graphId}`,
+      startIn: await getDirectoryPickerStartIn(graphId),
+    });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       return getLogseqAssetFolderStatus(graphId);
     }
     throw error;
   }
+  const displayPath = await resolveDisplayPathForLink(root, graphName);
   await idbSetHandle(graphId, root);
   clearCacheForGraph(graphId);
   writeLogseqAssetsMeta(graphId, {
     name: root.name,
     linkedAt: new Date().toISOString(),
+    displayPath,
   });
   const perm = await root.requestPermission({ mode: "read" });
   const status = perm === "granted" ? "ready" : "denied";
@@ -353,13 +517,37 @@ export function logseqAssetsStatusLabel(
   meta: LogseqAssetsFolderMeta | null,
 ): string {
   switch (status) {
-    case "ready":
-      return meta?.name ? `Assets: ${meta.name}` : "Assets linked";
+    case "ready": {
+      const path = linkedAssetsPathLabel(meta);
+      if (path) {
+        return path.length > 36 ? `${path.slice(0, 16)}…${path.slice(-16)}` : path;
+      }
+      return "Assets linked";
+    }
     case "denied":
       return "Assets access needed";
     case "not_linked":
       return "No assets folder";
     case "unavailable":
       return "Assets linking unavailable";
+  }
+}
+
+export function logseqAssetsStatusTitle(
+  status: LogseqAssetFolderStatus,
+  meta: LogseqAssetsFolderMeta | null,
+): string {
+  const path = linkedAssetsPathLabel(meta);
+  switch (status) {
+    case "ready":
+      return path
+        ? `Assets folder linked on this device:\n${path}`
+        : "Assets folder linked on this device";
+    case "denied":
+      return "Allow folder access again in Settings";
+    case "not_linked":
+      return "Link this graph's Logseq assets folder in Settings";
+    default:
+      return "Assets linking unavailable in this browser";
   }
 }

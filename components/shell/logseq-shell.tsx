@@ -15,6 +15,7 @@ type Props = {
   graphs: GraphSummary[];
   activeGraph: GraphSummary;
   currentUsername?: string;
+  showUsersAdmin?: boolean;
   children: React.ReactNode;
 };
 
@@ -23,6 +24,7 @@ export function LogseqShell({
   graphs,
   activeGraph,
   currentUsername = "",
+  showUsersAdmin = false,
   children,
 }: Props) {
   const [search, setSearch] = useState("");
@@ -44,6 +46,7 @@ export function LogseqShell({
             open={sidebarOpen}
             onClose={() => setSidebarOpen(false)}
             onMenuClick={() => setSidebarOpen((v) => !v)}
+            showUsersAdmin={showUsersAdmin}
           />
           <div className="nodra-main-column flex min-h-0 min-w-0 flex-1 flex-col">
             <LogseqHeader

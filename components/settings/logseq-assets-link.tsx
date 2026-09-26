@@ -1,14 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  defaultPickerStartLabel,
+  detectClientPlatform,
+  typicalLogseqAssetsPathHints,
+} from "@/lib/logseq/assets-path-hints";
 import {
   ensureLogseqAssetPermission,
   getLogseqAssetFolderStatus,
   isBraveBrowser,
   isLogseqAssetPickerSupported,
   linkLogseqAssetsFolder,
+  linkProfilePickerAnchor,
+  linkedAssetsPathLabel,
   readLogseqAssetsMeta,
+  readProfilePickerAnchorMeta,
   unlinkLogseqAssetsFolder,
+  unlinkProfilePickerAnchor,
+  updateLogseqAssetsDisplayPath,
   type LogseqAssetFolderStatus,
   type LogseqAssetsFolderMeta,
 } from "@/lib/logseq/local-asset-folder";
@@ -21,17 +31,29 @@ type Props = {
 export function LogseqAssetsLink({ graphId, graphName }: Props) {
   const [status, setStatus] = useState<LogseqAssetFolderStatus>("not_linked");
   const [meta, setMeta] = useState<LogseqAssetsFolderMeta | null>(null);
+  const [profileAnchor, setProfileAnchor] = useState(
+    readProfilePickerAnchorMeta(),
+  );
+  const [pathDraft, setPathDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [braveNeedsFlag, setBraveNeedsFlag] = useState(false);
-  /** null until mounted — avoids SSR/client mismatch for window APIs */
   const [pickerSupported, setPickerSupported] = useState<boolean | null>(null);
+
+  const pathHints = useMemo(
+    () => typicalLogseqAssetsPathHints(graphName),
+    [graphName],
+  );
+  const platform = useMemo(() => detectClientPlatform(), []);
 
   useEffect(() => {
     if (!graphId) return;
     void (async () => {
       const supported = isLogseqAssetPickerSupported();
       setPickerSupported(supported);
-      setMeta(readLogseqAssetsMeta(graphId));
+      const nextMeta = readLogseqAssetsMeta(graphId);
+      setMeta(nextMeta);
+      setPathDraft(linkedAssetsPathLabel(nextMeta) ?? "");
+      setProfileAnchor(readProfilePickerAnchorMeta());
       setStatus(await getLogseqAssetFolderStatus(graphId));
       if (!supported && (await isBraveBrowser())) {
         setBraveNeedsFlag(true);
@@ -43,11 +65,35 @@ export function LogseqAssetsLink({ graphId, graphName }: Props) {
     if (!graphId) return;
     setBusy(true);
     try {
-      const next = await linkLogseqAssetsFolder(graphId);
+      const next = await linkLogseqAssetsFolder(graphId, graphName);
       setStatus(next);
-      setMeta(readLogseqAssetsMeta(graphId));
+      const nextMeta = readLogseqAssetsMeta(graphId);
+      setMeta(nextMeta);
+      setPathDraft(linkedAssetsPathLabel(nextMeta) ?? "");
     } catch {
       // Non-abort failures are rare; keep current UI state
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onSetProfileAnchor() {
+    setBusy(true);
+    try {
+      const result = await linkProfilePickerAnchor();
+      if (result === "ready") {
+        setProfileAnchor(readProfilePickerAnchorMeta());
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onClearProfileAnchor() {
+    setBusy(true);
+    try {
+      await unlinkProfilePickerAnchor();
+      setProfileAnchor(null);
     } finally {
       setBusy(false);
     }
@@ -71,14 +117,22 @@ export function LogseqAssetsLink({ graphId, graphName }: Props) {
       await unlinkLogseqAssetsFolder(graphId);
       setStatus("not_linked");
       setMeta(null);
+      setPathDraft("");
     } finally {
       setBusy(false);
     }
   }
 
+  function saveDisplayPath() {
+    if (!graphId) return;
+    updateLogseqAssetsDisplayPath(graphId, pathDraft);
+    setMeta(readLogseqAssetsMeta(graphId));
+  }
+
   const supported = pickerSupported === true;
   const linked = status === "ready";
   const needsPermission = status === "denied";
+  const connectedPath = linkedAssetsPathLabel(meta);
 
   if (!graphId) {
     return (
@@ -108,12 +162,55 @@ export function LogseqAssetsLink({ graphId, graphName }: Props) {
         (nothing is uploaded except through normal image paste). Each graph has
         its own link; other devices must link again.
       </p>
-      <p className="mt-2 text-xs text-[var(--nodra-muted)]">
-        Typical path:{" "}
-        <code className="text-[11px]">
-          %USERPROFILE%\logseq\graphs\&lt;graph&gt;\assets
-        </code>
-      </p>
+      <div className="mt-2 space-y-1 text-xs text-[var(--nodra-muted)]">
+        <p>Typical locations on this system:</p>
+        {pathHints.map((hint) => (
+          <code key={hint} className="block text-[11px]">
+            {hint}
+          </code>
+        ))}
+      </div>
+
+      {supported && (
+        <div className="mt-3 rounded-md border border-dashed border-[var(--nodra-border)] px-3 py-2 text-xs text-[var(--nodra-muted)]">
+          <p>
+            Folder picker starts in{" "}
+            {profileAnchor?.displayPath ? (
+              <code className="text-[11px]">{profileAnchor.displayPath}</code>
+            ) : profileAnchor?.name ? (
+              <strong>{profileAnchor.name}</strong>
+            ) : (
+              <span>{defaultPickerStartLabel()}</span>
+            )}
+            .
+          </p>
+          <p className="mt-1">
+            {platform === "windows"
+              ? "Set your user profile folder (%USERPROFILE%) once so every picker opens there."
+              : "Set your home folder once so every picker opens there (Mac/Linux)."}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="rounded border border-[var(--nodra-border)] px-2 py-1 text-[11px]"
+              onClick={() => void onSetProfileAnchor()}
+              disabled={busy}
+            >
+              {profileAnchor ? "Change picker start folder" : "Set picker start folder"}
+            </button>
+            {profileAnchor && (
+              <button
+                type="button"
+                className="rounded px-2 py-1 text-[11px] text-[var(--nodra-muted)] hover:text-[var(--nodra-fg)]"
+                onClick={() => void onClearProfileAnchor()}
+                disabled={busy}
+              >
+                Reset to Documents
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {pickerSupported === null && (
         <p className="mt-3 text-xs text-[var(--nodra-muted)]">
@@ -130,31 +227,45 @@ export function LogseqAssetsLink({ graphId, graphName }: Props) {
             , set it to <strong>Enabled</strong>, then relaunch Brave and reload
             this page.
           </p>
-          <p className="mt-2 text-xs text-[var(--nodra-muted)]">
-            Until then, use Chrome or Edge for folder linking, or paste images
-            that include file data in the clipboard.
-          </p>
         </div>
       )}
       {pickerSupported === false && !braveNeedsFlag && (
         <p className="mt-3 text-sm text-amber-600 dark:text-amber-400">
           Folder linking needs a browser that exposes{" "}
           <code className="text-[12px]">showDirectoryPicker</code> (Chrome,
-          Edge, or Brave with the File System Access flag). Text paste still
-          works elsewhere.
+          Edge, or Brave with the File System Access flag).
         </p>
+      )}
+
+      {supported && connectedPath && (linked || needsPermission) && (
+        <div className="mt-4 rounded-md bg-[var(--nodra-bg)] px-3 py-2">
+          <p className="text-xs font-medium text-[var(--nodra-muted)]">
+            Connected path (this device)
+          </p>
+          <p className="mt-1 break-all font-mono text-[12px] text-[var(--nodra-fg)]">
+            {connectedPath}
+          </p>
+          <label className="mt-2 block text-xs text-[var(--nodra-muted)]">
+            Adjust label if the browser did not detect the full path
+            <input
+              className="nodra-input mt-1 w-full font-mono text-[12px]"
+              value={pathDraft}
+              onChange={(e) => setPathDraft(e.target.value)}
+            />
+          </label>
+          <button
+            type="button"
+            className="mt-2 rounded border border-[var(--nodra-border)] px-2 py-1 text-xs"
+            onClick={saveDisplayPath}
+            disabled={!pathDraft.trim()}
+          >
+            Save path label
+          </button>
+        </div>
       )}
 
       {supported && (
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          {linked && meta && (
-            <span className="text-sm text-[var(--nodra-muted)]">
-              Linked on this device:{" "}
-              <span className="font-medium text-[var(--nodra-fg)]">
-                {meta.name}
-              </span>
-            </span>
-          )}
           {!linked && !needsPermission && (
             <button
               type="button"

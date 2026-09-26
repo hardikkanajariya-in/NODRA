@@ -1,5 +1,6 @@
 import { listPages } from "@/lib/pages/service";
 import { getSession } from "@/lib/auth/session";
+import { isSupervisorSession } from "@/lib/auth/supervisor";
 import {
   getActiveGraph,
   listGraphs,
@@ -17,6 +18,7 @@ export default async function NotebookLayout({
   let graphs: { id: string; name: string; slug: string }[] = [];
   let activeGraph = { id: "", name: "NODRA", slug: "main" };
   let currentUsername = "";
+  let showUsersAdmin = false;
 
   try {
     const session = await getSession();
@@ -24,6 +26,7 @@ export default async function NotebookLayout({
       throw new Error("Unauthorized");
     }
     currentUsername = session.username;
+    showUsersAdmin = isSupervisorSession(session);
     const graph = await getActiveGraph(session.userId);
     activeGraph = { id: graph.id, name: graph.name, slug: graph.slug };
     graphs = await listGraphs(session.userId);
@@ -39,6 +42,7 @@ export default async function NotebookLayout({
       graphs={graphs}
       activeGraph={activeGraph}
       currentUsername={currentUsername}
+      showUsersAdmin={showUsersAdmin}
     >
       {children}
     </LogseqShell>

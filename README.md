@@ -63,6 +63,7 @@ If you paste from Logseq Desktop and images appear as filenames only, open **Set
 |----------|---------|
 | `DATABASE_URL` | PostgreSQL connection string |
 | `SESSION_SECRET` | Signs the session cookie |
+| `SUPERVISOR_USERNAME` | Optional. Username allowed to use `/users` and admin APIs; omit on public installs |
 | `R2_*` | Cloudflare R2 credentials for assets |
 | `NEXT_PUBLIC_APP_URL` | Public URL of your deployment |
 

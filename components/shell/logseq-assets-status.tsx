@@ -8,6 +8,7 @@ import {
   getLogseqAssetFolderStatus,
   isLogseqAssetPickerSupported,
   logseqAssetsStatusLabel,
+  logseqAssetsStatusTitle,
   readLogseqAssetsMeta,
   type LogseqAssetFolderStatus,
   type LogseqAssetsFolderMeta,
@@ -50,6 +51,7 @@ export function LogseqAssetsTopBarStatus({ graphId }: Props) {
   if (!graphId || !supported) return null;
 
   const label = logseqAssetsStatusLabel(status, meta);
+  const title = logseqAssetsStatusTitle(status, meta);
   const tone =
     status === "ready"
       ? "text-[var(--nodra-muted)]"
@@ -60,8 +62,8 @@ export function LogseqAssetsTopBarStatus({ graphId }: Props) {
   return (
     <Link
       href="/settings"
-      className={`nodra-assets-status flex max-w-[8rem] items-center gap-1 truncate text-xs md:max-w-[10rem] ${tone}`}
-      title={`${label} — per graph, stored on this device only. Open Settings to link or change.`}
+      className={`nodra-assets-status flex max-w-[6rem] items-center gap-1 truncate text-xs md:max-w-[12rem] ${tone}`}
+      title={title}
     >
       <FolderOpen size={14} className="shrink-0" aria-hidden />
       <span className="truncate">{label}</span>

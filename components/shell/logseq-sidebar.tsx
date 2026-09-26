@@ -10,6 +10,7 @@ import {
   Plus,
   Search,
   Settings,
+  Users,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useMemo, useState } from "react";
@@ -30,6 +31,7 @@ type Props = {
   open: boolean;
   onClose: () => void;
   onMenuClick?: () => void;
+  showUsersAdmin?: boolean;
 };
 
 export function LogseqSidebar({
@@ -41,6 +43,7 @@ export function LogseqSidebar({
   open,
   onClose,
   onMenuClick,
+  showUsersAdmin = false,
 }: Props) {
   const pathname = usePathname();
   const router = useRouter();
@@ -55,6 +58,7 @@ export function LogseqSidebar({
   const today = format(new Date(), "yyyy-MM-dd");
   const onGraph = pathname === "/graph";
   const onSettings = pathname === "/settings";
+  const onUsers = pathname === "/users";
 
   async function createPage() {
     const name = window.prompt("Page name");
@@ -164,6 +168,16 @@ export function LogseqSidebar({
               <Settings size={16} className="shrink-0 opacity-80" />
               Settings
             </ClientNavLink>
+            {showUsersAdmin && (
+              <ClientNavLink
+                href="/users"
+                className={navClass(onUsers)}
+                onClick={onClose}
+              >
+                <Users size={16} className="shrink-0 opacity-80" />
+                Users
+              </ClientNavLink>
+            )}
           </nav>
 
           <p className="nodra-sidebar-label mt-3 flex items-center justify-between px-2.5 pb-1">
