@@ -29,6 +29,12 @@ function metaKeyForGraph(graphId: string): string {
   return `nodra/logseq-assets-meta:${graphId}`;
 }
 
+/** Chromium limits `showDirectoryPicker` `id` to 32 characters. */
+function directoryPickerIdForGraph(graphId: string): string {
+  const hex = graphId.replace(/-/g, "");
+  return `nodra-${hex.slice(0, 26)}`;
+}
+
 function notifyAssetsFolderChanged(graphId: string) {
   if (typeof window === "undefined") return;
   window.dispatchEvent(
@@ -368,7 +374,7 @@ export async function linkLogseqAssetsFolder(
   try {
     root = await window.showDirectoryPicker({
       mode: "read",
-      id: `nodra-logseq-assets-${graphId}`,
+      id: directoryPickerIdForGraph(graphId),
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
