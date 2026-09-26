@@ -5,6 +5,8 @@ import { db } from "@/lib/db/client";
 import { assets, pages } from "@/lib/db/schema";
 import { isR2Configured, uploadToR2 } from "@/lib/assets/r2";
 import { buildAssetStorageKey } from "@/lib/assets/storage-key";
+import { requireSession } from "@/lib/auth/session";
+import { canAccessGraph } from "@/lib/graphs/access";
 
 export async function POST(request: Request) {
   if (!isR2Configured()) {
@@ -13,6 +15,8 @@ export async function POST(request: Request) {
       { status: 503 },
     );
   }
+
+  const session = await requireSession();
 
   const form = await request.formData();
   const file = form.get("file");
@@ -30,11 +34,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Page not found" }, { status: 404 });
   }
 
+  if (!(await canAccessGraph(session.userId, page.graphId))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const buffer = Buffer.from(await file.arrayBuffer());
   const ext = file.name.split(".").pop() ?? "bin";
   const id = randomUUID();
   const storageKey = buildAssetStorageKey(
-    page.graph.slug,
+    session.username,
     page,
     `${id}.${ext}`,
   );

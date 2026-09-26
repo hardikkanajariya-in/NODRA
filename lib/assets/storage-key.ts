@@ -13,15 +13,16 @@ export function assetScopeSegment(page: PageForStorage): string {
   return page.slug;
 }
 
+/** R2 key: `Nodra/{username}/{journal-date|page-slug}/assets/{file}` */
 export function buildAssetStorageKey(
-  graphSlug: string,
+  username: string,
   page: PageForStorage,
   fileName: string,
 ): string {
-  const graph = sanitizePathSegment(graphSlug);
+  const user = sanitizePathSegment(username);
   const scope = sanitizePathSegment(assetScopeSegment(page));
   const name = sanitizePathSegment(fileName);
-  return `Nodra/${graph}/${scope}/assets/${name}`;
+  return `Nodra/${user}/${scope}/assets/${name}`;
 }
 
 function sanitizePathSegment(segment: string): string {
