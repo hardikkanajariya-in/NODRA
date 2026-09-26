@@ -1,6 +1,37 @@
-import { Extension } from "@tiptap/core";
-import { Plugin } from "@tiptap/pm/state";
-import { isAtStartOfNode } from "@tiptap/core";
+import { Extension, isAtStartOfNode } from "@tiptap/core";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
+import { Plugin, TextSelection } from "@tiptap/pm/state";
+
+function listItemIsEmptyForBackspace(item: ProseMirrorNode): boolean {
+  const paragraph = item.firstChild;
+  if (paragraph?.type.name !== "paragraph" || paragraph.content.size > 0) {
+    return false;
+  }
+  for (let i = 1; i < item.childCount; i++) {
+    const child = item.child(i);
+    if (child.type.name === "bulletList" || child.content.size > 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function endOfListItemParagraph(
+  listStart: number,
+  list: ProseMirrorNode,
+  itemIndex: number,
+): number {
+  let itemPos = listStart + 1;
+  for (let i = 0; i < itemIndex; i++) {
+    itemPos += list.child(i).nodeSize;
+  }
+  const item = list.child(itemIndex);
+  const paragraph = item.firstChild;
+  if (paragraph?.type.name === "paragraph") {
+    return itemPos + 1 + paragraph.content.size;
+  }
+  return itemPos + 1;
+}
 
 /** Keep typing inside bullet lists (Logseq outliner). */
 export const LogseqOutline = Extension.create({
@@ -82,11 +113,7 @@ export const LogseqOutline = Extension.create({
         if (listItemDepth < 0) return false;
 
         const item = $from.node(listItemDepth);
-        const paragraph = item.firstChild;
-        const isEmptyParagraph =
-          paragraph?.type.name === "paragraph" && paragraph.content.size === 0;
-
-        if (!isEmptyParagraph) return false;
+        if (!listItemIsEmptyForBackspace(item)) return false;
 
         const listDepth = listItemDepth - 1;
         if (listDepth < 0 || $from.node(listDepth).type.name !== "bulletList") {
@@ -95,8 +122,24 @@ export const LogseqOutline = Extension.create({
 
         const list = $from.node(listDepth);
         const indexInList = $from.index(listDepth);
-        if (list.childCount > 1 || listItemDepth > 2) return false;
 
+        if (list.childCount <= 1) return true;
+
+        if (indexInList === 0) return false;
+
+        const itemFrom = $from.before(listItemDepth);
+        const itemTo = $from.after(listItemDepth);
+        const listStart = $from.before(listDepth);
+        const focusPos = endOfListItemParagraph(
+          listStart,
+          list,
+          indexInList - 1,
+        );
+
+        const tr = state.tr.delete(itemFrom, itemTo);
+        const mappedFocus = tr.mapping.map(focusPos, -1);
+        tr.setSelection(TextSelection.create(tr.doc, mappedFocus));
+        editor.view.dispatch(tr);
         return true;
       },
     };

@@ -9,7 +9,42 @@ import {
   RemoveFormatting,
   Strikethrough,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+type StoredSelection = { from: number; to: number };
+
+function restoreSelection(editor: Editor, stored: StoredSelection | null) {
+  if (stored && stored.from !== stored.to) {
+    editor.chain().focus().setTextSelection(stored).run();
+  } else {
+    editor.commands.focus();
+  }
+}
+
+function toggleListQuote(editor: Editor) {
+  if (!editor.isActive("listItem")) return;
+  const quoted = !!editor.getAttributes("listItem").quoted;
+  editor.chain().focus().updateAttributes("listItem", { quoted: !quoted }).run();
+}
+
+function clearTextFormatting(editor: Editor) {
+  const { empty } = editor.state.selection;
+  if (empty) {
+    editor
+      .chain()
+      .focus()
+      .unsetMark("bold", { extendEmptyMarkRange: true })
+      .unsetMark("italic", { extendEmptyMarkRange: true })
+      .unsetMark("strike", { extendEmptyMarkRange: true })
+      .unsetMark("code", { extendEmptyMarkRange: true })
+      .run();
+  } else {
+    editor.chain().focus().unsetAllMarks().run();
+  }
+  if (editor.isActive("listItem") && editor.getAttributes("listItem").quoted) {
+    editor.chain().focus().updateAttributes("listItem", { quoted: false }).run();
+  }
+}
 
 type MenuState = {
   open: boolean;
@@ -70,9 +105,10 @@ const FORMAT_ACTIONS: FormatAction[] = [
     id: "blockquote",
     label: "Quote",
     icon: Quote,
-    isActive: (editor) => editor.isActive("blockquote"),
+    isActive: (editor) =>
+      editor.isActive("listItem") && !!editor.getAttributes("listItem").quoted,
     run: (editor) => {
-      editor.chain().focus().toggleBlockquote().run();
+      toggleListQuote(editor);
     },
   },
   {
@@ -81,7 +117,7 @@ const FORMAT_ACTIONS: FormatAction[] = [
     icon: RemoveFormatting,
     isActive: () => false,
     run: (editor) => {
-      editor.chain().focus().unsetAllMarks().run();
+      clearTextFormatting(editor);
     },
   },
 ];
@@ -106,6 +142,7 @@ export function EditorFormatContextMenu({ editor }: Props) {
     y: 0,
   });
   const [, bump] = useState(0);
+  const storedSelectionRef = useRef<StoredSelection | null>(null);
 
   const close = useCallback(() => {
     setMenu((current) => (current.open ? { ...current, open: false } : current));
@@ -120,7 +157,12 @@ export function EditorFormatContextMenu({ editor }: Props) {
       if (!editor.isEditable) return;
       event.preventDefault();
       event.stopPropagation();
+      const { from, to } = editor.state.selection;
+      storedSelectionRef.current = from !== to ? { from, to } : null;
       editor.commands.focus();
+      if (storedSelectionRef.current) {
+        editor.commands.setTextSelection(storedSelectionRef.current);
+      }
       setMenu({
         open: true,
         x: event.clientX + OFFSET,
@@ -198,6 +240,7 @@ export function EditorFormatContextMenu({ editor }: Props) {
               aria-pressed={active}
               onMouseDown={(event) => {
                 event.preventDefault();
+                restoreSelection(editor, storedSelectionRef.current);
                 action.run(editor);
               }}
             >

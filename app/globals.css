@@ -437,6 +437,13 @@ body {
   background: var(--nodra-block-hover);
 }
 
+.nodra-editor-prose ul:not([data-type="taskList"]) > li[data-quoted="true"] {
+  border-left: 3px solid var(--nodra-border);
+  padding-left: 0.35rem;
+  margin-left: -0.35rem;
+  opacity: 0.92;
+}
+
 .nodra-editor-prose ul:not([data-type="taskList"]) > li::before {
   content: "";
   position: absolute;

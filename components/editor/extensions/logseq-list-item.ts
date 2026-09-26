@@ -14,6 +14,12 @@ export const LogseqListItem = ListItem.extend({
         renderHTML: (attributes) =>
           attributes.collapsed ? { "data-collapsed": "true" } : {},
       },
+      quoted: {
+        default: false,
+        parseHTML: (element) => element.getAttribute("data-quoted") === "true",
+        renderHTML: (attributes) =>
+          attributes.quoted ? { "data-quoted": "true" } : {},
+      },
     };
   },
 
