@@ -41,14 +41,3 @@ export function typicalLogseqAssetsPathHints(graphName: string): string[] {
   }
   return [`~/logseq/graphs/${g}/assets`];
 }
-
-export function defaultPickerStartLabel(): string {
-  const platform = detectClientPlatform();
-  if (platform === "windows") {
-    return "Documents (navigate to %USERPROFILE% → logseq → graphs → … → assets)";
-  }
-  if (platform === "mac") {
-    return "Documents or your home folder (→ Library/Application Support/Logseq/…)";
-  }
-  return "Documents or home";
-}

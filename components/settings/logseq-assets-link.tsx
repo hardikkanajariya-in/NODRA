@@ -1,23 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  defaultPickerStartLabel,
-  detectClientPlatform,
-  typicalLogseqAssetsPathHints,
-} from "@/lib/logseq/assets-path-hints";
+import { typicalLogseqAssetsPathHints } from "@/lib/logseq/assets-path-hints";
 import {
   ensureLogseqAssetPermission,
   getLogseqAssetFolderStatus,
   isBraveBrowser,
   isLogseqAssetPickerSupported,
   linkLogseqAssetsFolder,
-  linkProfilePickerAnchor,
   linkedAssetsPathLabel,
   readLogseqAssetsMeta,
-  readProfilePickerAnchorMeta,
   unlinkLogseqAssetsFolder,
-  unlinkProfilePickerAnchor,
   updateLogseqAssetsDisplayPath,
   type LogseqAssetFolderStatus,
   type LogseqAssetsFolderMeta,
@@ -31,9 +24,6 @@ type Props = {
 export function LogseqAssetsLink({ graphId, graphName }: Props) {
   const [status, setStatus] = useState<LogseqAssetFolderStatus>("not_linked");
   const [meta, setMeta] = useState<LogseqAssetsFolderMeta | null>(null);
-  const [profileAnchor, setProfileAnchor] = useState(
-    readProfilePickerAnchorMeta(),
-  );
   const [pathDraft, setPathDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [braveNeedsFlag, setBraveNeedsFlag] = useState(false);
@@ -43,7 +33,6 @@ export function LogseqAssetsLink({ graphId, graphName }: Props) {
     () => typicalLogseqAssetsPathHints(graphName),
     [graphName],
   );
-  const platform = useMemo(() => detectClientPlatform(), []);
 
   useEffect(() => {
     if (!graphId) return;
@@ -53,7 +42,6 @@ export function LogseqAssetsLink({ graphId, graphName }: Props) {
       const nextMeta = readLogseqAssetsMeta(graphId);
       setMeta(nextMeta);
       setPathDraft(linkedAssetsPathLabel(nextMeta) ?? "");
-      setProfileAnchor(readProfilePickerAnchorMeta());
       setStatus(await getLogseqAssetFolderStatus(graphId));
       if (!supported && (await isBraveBrowser())) {
         setBraveNeedsFlag(true);
@@ -72,28 +60,6 @@ export function LogseqAssetsLink({ graphId, graphName }: Props) {
       setPathDraft(linkedAssetsPathLabel(nextMeta) ?? "");
     } catch {
       // Non-abort failures are rare; keep current UI state
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onSetProfileAnchor() {
-    setBusy(true);
-    try {
-      const result = await linkProfilePickerAnchor();
-      if (result === "ready") {
-        setProfileAnchor(readProfilePickerAnchorMeta());
-      }
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onClearProfileAnchor() {
-    setBusy(true);
-    try {
-      await unlinkProfilePickerAnchor();
-      setProfileAnchor(null);
     } finally {
       setBusy(false);
     }
@@ -170,47 +136,6 @@ export function LogseqAssetsLink({ graphId, graphName }: Props) {
           </code>
         ))}
       </div>
-
-      {supported && (
-        <div className="mt-3 rounded-md border border-dashed border-[var(--nodra-border)] px-3 py-2 text-xs text-[var(--nodra-muted)]">
-          <p>
-            Folder picker starts in{" "}
-            {profileAnchor?.displayPath ? (
-              <code className="text-[11px]">{profileAnchor.displayPath}</code>
-            ) : profileAnchor?.name ? (
-              <strong>{profileAnchor.name}</strong>
-            ) : (
-              <span>{defaultPickerStartLabel()}</span>
-            )}
-            .
-          </p>
-          <p className="mt-1">
-            {platform === "windows"
-              ? "Set your user profile folder (%USERPROFILE%) once so every picker opens there."
-              : "Set your home folder once so every picker opens there (Mac/Linux)."}
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="rounded border border-[var(--nodra-border)] px-2 py-1 text-[11px]"
-              onClick={() => void onSetProfileAnchor()}
-              disabled={busy}
-            >
-              {profileAnchor ? "Change picker start folder" : "Set picker start folder"}
-            </button>
-            {profileAnchor && (
-              <button
-                type="button"
-                className="rounded px-2 py-1 text-[11px] text-[var(--nodra-muted)] hover:text-[var(--nodra-fg)]"
-                onClick={() => void onClearProfileAnchor()}
-                disabled={busy}
-              >
-                Reset to Documents
-              </button>
-            )}
-          </div>
-        </div>
-      )}
 
       {pickerSupported === null && (
         <p className="mt-3 text-xs text-[var(--nodra-muted)]">

@@ -4,8 +4,6 @@ const IDB_NAME = "nodra-fs";
 const IDB_STORE = "handles";
 const LEGACY_IDB_KEY = "logseq-assets-handle";
 const LEGACY_META_KEY = "nodra/logseq-assets-meta";
-const PROFILE_PICKER_ANCHOR_IDB = "logseq-profile-picker-anchor";
-const PROFILE_PICKER_ANCHOR_META = "nodra/logseq-profile-picker-meta";
 
 const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "gif", "svg"];
 
@@ -18,12 +16,6 @@ export type LogseqAssetFolderStatus =
   | "ready";
 
 export type LogseqAssetsFolderMeta = {
-  name: string;
-  linkedAt: string;
-  displayPath?: string;
-};
-
-export type ProfilePickerAnchorMeta = {
   name: string;
   linkedAt: string;
   displayPath?: string;
@@ -93,28 +85,6 @@ function writeLogseqAssetsMeta(
     return;
   }
   localStorage.setItem(key, JSON.stringify(meta));
-}
-
-export function readProfilePickerAnchorMeta(): ProfilePickerAnchorMeta | null {
-  if (typeof localStorage === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(PROFILE_PICKER_ANCHOR_META);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as ProfilePickerAnchorMeta;
-    if (parsed?.name && parsed?.linkedAt) return parsed;
-  } catch {
-    // ignore
-  }
-  return null;
-}
-
-function writeProfilePickerAnchorMeta(meta: ProfilePickerAnchorMeta | null) {
-  if (typeof localStorage === "undefined") return;
-  if (!meta) {
-    localStorage.removeItem(PROFILE_PICKER_ANCHOR_META);
-    return;
-  }
-  localStorage.setItem(PROFILE_PICKER_ANCHOR_META, JSON.stringify(meta));
 }
 
 export function updateLogseqAssetsDisplayPath(
@@ -335,71 +305,6 @@ async function resolveDisplayPathForLink(
   return suggestLogseqAssetsPath(graphName);
 }
 
-async function getProfilePickerAnchorHandle(): Promise<FileSystemDirectoryHandle | null> {
-  return idbGetRaw(PROFILE_PICKER_ANCHOR_IDB);
-}
-
-async function getDirectoryPickerStartIn(
-  graphId: string,
-): Promise<FileSystemDirectoryPickerOptions["startIn"]> {
-  const anchor = await getProfilePickerAnchorHandle();
-  if (anchor) return anchor;
-
-  const existing = await idbGetHandle(graphId);
-  if (existing) return existing;
-
-  return "documents";
-}
-
-export async function linkProfilePickerAnchor(): Promise<
-  "ready" | "unavailable" | "cancelled"
-> {
-  if (!isLogseqAssetPickerSupported()) return "unavailable";
-  let handle: FileSystemDirectoryHandle;
-  try {
-    handle = await window.showDirectoryPicker({
-      mode: "read",
-      id: "nodra-profile-picker-anchor",
-      startIn: "documents",
-    });
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
-      return "cancelled";
-    }
-    throw error;
-  }
-
-  await idbSetRaw(PROFILE_PICKER_ANCHOR_IDB, handle);
-  const displayPath =
-    (await tryResolveDirectoryDisplayPath(handle)) ?? handle.name;
-  writeProfilePickerAnchorMeta({
-    name: handle.name,
-    linkedAt: new Date().toISOString(),
-    displayPath,
-  });
-  await handle.requestPermission({ mode: "read" });
-  return "ready";
-}
-
-export async function unlinkProfilePickerAnchor(): Promise<void> {
-  await idbDeleteRaw(PROFILE_PICKER_ANCHOR_IDB);
-  writeProfilePickerAnchorMeta(null);
-}
-
-async function idbSetRaw(
-  key: string,
-  handle: FileSystemDirectoryHandle,
-): Promise<void> {
-  const db = await openIdb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(IDB_STORE, "readwrite");
-    const store = tx.objectStore(IDB_STORE);
-    const req = store.put(handle, key);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error ?? new Error("IndexedDB write failed"));
-  });
-}
-
 const cachedAssetsDir = new Map<
   string,
   { rootKey: string; dir: FileSystemDirectoryHandle }
@@ -463,7 +368,6 @@ export async function linkLogseqAssetsFolder(
     root = await window.showDirectoryPicker({
       mode: "read",
       id: `nodra-logseq-assets-${graphId}`,
-      startIn: await getDirectoryPickerStartIn(graphId),
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
