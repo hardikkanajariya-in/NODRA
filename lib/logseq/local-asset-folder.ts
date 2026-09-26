@@ -39,6 +39,7 @@ function notifyAssetsFolderChanged(graphId: string) {
 export function isLogseqAssetPickerSupported(): boolean {
   return (
     typeof window !== "undefined" &&
+    window.isSecureContext &&
     typeof window.showDirectoryPicker === "function"
   );
 }

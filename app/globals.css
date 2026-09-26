@@ -52,6 +52,39 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+a,
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+label[for],
+select,
+summary,
+.nodra-nav-item,
+.nodra-brand,
+.nodra-graph-menu-item,
+.nodra-journal-nav-btn,
+.nodra-page-ref,
+.nodra-sidebar-inline-btn,
+.nodra-journal-picker-day:not(:disabled),
+.nodra-journal-picker-link-btn,
+.nodra-dialog-btn,
+.nodra-assets-status {
+  cursor: pointer;
+}
+
+button:disabled,
+.nodra-journal-picker-day:disabled {
+  cursor: not-allowed;
+}
+
+input[type="search"],
+input[type="text"],
+input[type="password"],
+textarea,
+.nodra-search-input,
+.nodra-title-input {
+  cursor: text;
+}
+
 .nodra-app {
   background: var(--nodra-bg);
   color: var(--nodra-fg);
@@ -336,85 +369,205 @@ body {
   padding-bottom: 2rem;
 }
 
-.nodra-journal-feed-toolbar {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-  margin-bottom: 0.85rem;
-  padding-bottom: 0.65rem;
-  border-bottom: 1px solid var(--nodra-border);
-}
-
-.nodra-journal-toolbar-btn {
+.nodra-sidebar-inline-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.35rem 0.65rem;
-  border-radius: 6px;
-  font-size: 0.8125rem;
+  justify-content: center;
+  padding: 0.15rem;
+  border-radius: 4px;
+  color: var(--nodra-muted);
+}
+
+.nodra-sidebar-inline-btn:hover {
+  color: var(--nodra-link);
+  background: var(--nodra-nav-active);
+}
+
+.nodra-journal-sidebar-list {
+  max-height: min(30vh, 13rem);
+  overflow-y: auto;
+  margin-bottom: 0.25rem;
+}
+
+.nodra-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgb(0 0 0 / 0.4);
+}
+
+.nodra-dialog {
+  width: 100%;
+  max-width: 26rem;
+  border-radius: 10px;
+  border: 1px solid var(--nodra-border);
+  background: var(--nodra-main);
+  padding: 1.25rem;
+  box-shadow: 0 16px 48px rgb(0 0 0 / 0.18);
+}
+
+.nodra-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.nodra-dialog-btn {
+  border-radius: 8px;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.875rem;
   font-weight: 500;
+}
+
+.nodra-dialog-btn--ghost {
+  border: 1px solid var(--nodra-border);
   color: var(--nodra-fg);
   background: transparent;
-  border: 1px solid var(--nodra-border);
-  transition:
-    background 0.12s ease,
-    border-color 0.12s ease;
 }
 
-.nodra-journal-toolbar-btn:hover:not(:disabled) {
+.nodra-dialog-btn--ghost:hover:not(:disabled) {
   background: var(--nodra-nav-active);
-  border-color: color-mix(in srgb, var(--nodra-accent) 25%, var(--nodra-border));
 }
 
-.nodra-journal-toolbar-btn--primary {
-  color: var(--nodra-link);
-  border-color: color-mix(in srgb, var(--nodra-link) 35%, var(--nodra-border));
-}
-
-.nodra-journal-toolbar-btn--submit {
+.nodra-dialog-btn--primary {
+  border: 1px solid var(--nodra-accent);
+  background: var(--nodra-accent);
   color: #fff;
+}
+
+.nodra-dialog-btn--primary:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.nodra-dialog-btn:disabled {
+  opacity: 0.55;
+}
+
+.nodra-journal-picker-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+
+.nodra-journal-picker-month {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.nodra-journal-picker-weekdays,
+.nodra-journal-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.2rem;
+}
+
+.nodra-journal-picker-weekdays {
+  margin-top: 0.75rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--nodra-muted);
+  text-align: center;
+}
+
+.nodra-journal-picker-grid {
+  margin-top: 0.35rem;
+}
+
+.nodra-journal-picker-day {
+  aspect-ratio: 1;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  color: var(--nodra-fg);
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.nodra-journal-picker-day--outside {
+  opacity: 0.25;
+}
+
+.nodra-journal-picker-day--skipped {
+  background: color-mix(in srgb, var(--nodra-accent) 8%, transparent);
+  border-color: color-mix(in srgb, var(--nodra-border) 70%, transparent);
+}
+
+.nodra-journal-picker-day--has-journal {
+  background: var(--nodra-nav-active);
+  color: var(--nodra-muted);
+}
+
+.nodra-journal-picker-day--selected {
   background: var(--nodra-accent);
   border-color: var(--nodra-accent);
+  color: #fff;
 }
 
-.nodra-journal-toolbar-btn--submit:hover:not(:disabled) {
-  filter: brightness(1.05);
+.nodra-journal-picker-day--today {
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px var(--nodra-accent);
+}
+
+.nodra-journal-picker-day--selected.nodra-journal-picker-day--today {
+  box-shadow: none;
+}
+
+.nodra-journal-picker-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  margin-top: 0.75rem;
+  font-size: 0.7rem;
+  color: var(--nodra-muted);
+}
+
+.nodra-journal-picker-swatch {
+  display: inline-block;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 3px;
+  margin-right: 0.25rem;
+  vertical-align: middle;
+}
+
+.nodra-journal-picker-swatch--skipped {
+  background: color-mix(in srgb, var(--nodra-accent) 12%, transparent);
+  border: 1px solid var(--nodra-border);
+}
+
+.nodra-journal-picker-swatch--has {
+  background: var(--nodra-nav-active);
+}
+
+.nodra-journal-picker-swatch--selected {
   background: var(--nodra-accent);
 }
 
-.nodra-journal-toolbar-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.nodra-journal-create-form {
+.nodra-journal-picker-actions-row {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  margin-top: 0.65rem;
 }
 
-.nodra-journal-date-input {
-  font-family: var(--nodra-font);
-  font-size: 0.875rem;
-  color: var(--nodra-fg);
-  background: var(--nodra-main);
-  border: 1px solid var(--nodra-border);
-  border-radius: 6px;
-  padding: 0.35rem 0.55rem;
-}
-
-.nodra-journal-date-input:focus {
-  outline: none;
-  border-color: color-mix(in srgb, var(--nodra-accent) 45%, var(--nodra-border));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--nodra-accent) 12%, transparent);
-}
-
-.nodra-journal-create-error {
-  flex: 1 1 100%;
-  margin: 0;
+.nodra-journal-picker-link-btn {
   font-size: 0.75rem;
-  color: var(--nodra-danger);
+  font-weight: 500;
+  color: var(--nodra-link);
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.nodra-journal-picker-link-btn:disabled {
+  opacity: 0.45;
 }
 
 .sr-only {

@@ -3,18 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { typicalLogseqAssetsPathHints } from "@/lib/logseq/assets-path-hints";
 import {
-  ensureLogseqAssetPermission,
-  getLogseqAssetFolderStatus,
   isBraveBrowser,
   isLogseqAssetPickerSupported,
-  linkLogseqAssetsFolder,
   linkedAssetsPathLabel,
   readLogseqAssetsMeta,
   unlinkLogseqAssetsFolder,
   updateLogseqAssetsDisplayPath,
-  type LogseqAssetFolderStatus,
-  type LogseqAssetsFolderMeta,
 } from "@/lib/logseq/local-asset-folder";
+import { useLogseqAssetLink } from "@/components/logseq/use-logseq-asset-link";
 
 type Props = {
   graphId: string;
@@ -22,12 +18,20 @@ type Props = {
 };
 
 export function LogseqAssetsLink({ graphId, graphName }: Props) {
-  const [status, setStatus] = useState<LogseqAssetFolderStatus>("not_linked");
-  const [meta, setMeta] = useState<LogseqAssetsFolderMeta | null>(null);
+  const {
+    status,
+    meta,
+    supported,
+    busy,
+    error,
+    setError,
+    refresh,
+    linkFolder,
+    reauthorize,
+  } = useLogseqAssetLink(graphId, graphName);
+
   const [pathDraft, setPathDraft] = useState("");
-  const [busy, setBusy] = useState(false);
   const [braveNeedsFlag, setBraveNeedsFlag] = useState(false);
-  const [pickerSupported, setPickerSupported] = useState<boolean | null>(null);
 
   const pathHints = useMemo(
     () => typicalLogseqAssetsPathHints(graphName),
@@ -37,65 +41,32 @@ export function LogseqAssetsLink({ graphId, graphName }: Props) {
   useEffect(() => {
     if (!graphId) return;
     void (async () => {
-      const supported = isLogseqAssetPickerSupported();
-      setPickerSupported(supported);
-      const nextMeta = readLogseqAssetsMeta(graphId);
-      setMeta(nextMeta);
-      setPathDraft(linkedAssetsPathLabel(nextMeta) ?? "");
-      setStatus(await getLogseqAssetFolderStatus(graphId));
-      if (!supported && (await isBraveBrowser())) {
+      setPathDraft(linkedAssetsPathLabel(readLogseqAssetsMeta(graphId)) ?? "");
+      if (!isLogseqAssetPickerSupported() && (await isBraveBrowser())) {
         setBraveNeedsFlag(true);
       }
     })();
-  }, [graphId]);
-
-  async function onLink() {
-    if (!graphId) return;
-    setBusy(true);
-    try {
-      const next = await linkLogseqAssetsFolder(graphId, graphName);
-      setStatus(next);
-      const nextMeta = readLogseqAssetsMeta(graphId);
-      setMeta(nextMeta);
-      setPathDraft(linkedAssetsPathLabel(nextMeta) ?? "");
-    } catch {
-      // Non-abort failures are rare; keep current UI state
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onReauthorize() {
-    if (!graphId) return;
-    setBusy(true);
-    try {
-      const next = await ensureLogseqAssetPermission(graphId);
-      setStatus(next);
-    } finally {
-      setBusy(false);
-    }
-  }
+  }, [graphId, status, meta]);
 
   async function onUnlink() {
     if (!graphId) return;
-    setBusy(true);
+    setError("");
     try {
       await unlinkLogseqAssetsFolder(graphId);
-      setStatus("not_linked");
-      setMeta(null);
+      await refresh();
       setPathDraft("");
-    } finally {
-      setBusy(false);
+    } catch {
+      setError("Could not unlink folder.");
     }
   }
 
   function saveDisplayPath() {
     if (!graphId) return;
     updateLogseqAssetsDisplayPath(graphId, pathDraft);
-    setMeta(readLogseqAssetsMeta(graphId));
+    void refresh();
   }
 
-  const supported = pickerSupported === true;
+  const pickerSupported = supported === true;
   const linked = status === "ready";
   const needsPermission = status === "denied";
   const connectedPath = linkedAssetsPathLabel(meta);
@@ -110,6 +81,7 @@ export function LogseqAssetsLink({ graphId, graphName }: Props) {
 
   return (
     <section
+      id="logseq-assets"
       className="rounded-md border border-[var(--nodra-border)] px-4 py-4"
       aria-labelledby="logseq-assets-heading"
     >
@@ -137,13 +109,13 @@ export function LogseqAssetsLink({ graphId, graphName }: Props) {
         ))}
       </div>
 
-      {pickerSupported === null && (
+      {supported === null && (
         <p className="mt-3 text-xs text-[var(--nodra-muted)]">
           Checking browser support…
         </p>
       )}
 
-      {pickerSupported === false && braveNeedsFlag && (
+      {supported === false && braveNeedsFlag && (
         <div className="mt-3 text-sm text-amber-600 dark:text-amber-400">
           <p>
             Brave uses Chromium, but it turns off the folder picker API by
@@ -154,15 +126,21 @@ export function LogseqAssetsLink({ graphId, graphName }: Props) {
           </p>
         </div>
       )}
-      {pickerSupported === false && !braveNeedsFlag && (
+      {supported === false && !braveNeedsFlag && (
         <p className="mt-3 text-sm text-amber-600 dark:text-amber-400">
           Folder linking needs a browser that exposes{" "}
           <code className="text-[12px]">showDirectoryPicker</code> (Chrome,
-          Edge, or Brave with the File System Access flag).
+          Edge, or Brave with the File System Access flag) over HTTPS.
         </p>
       )}
 
-      {supported && connectedPath && (linked || needsPermission) && (
+      {error && (
+        <p className="mt-3 text-sm text-[var(--nodra-danger)]" role="alert">
+          {error}
+        </p>
+      )}
+
+      {pickerSupported && connectedPath && (linked || needsPermission) && (
         <div className="mt-4 rounded-md bg-[var(--nodra-bg)] px-3 py-2">
           <p className="text-xs font-medium text-[var(--nodra-muted)]">
             Connected path (this device)
@@ -180,7 +158,7 @@ export function LogseqAssetsLink({ graphId, graphName }: Props) {
           </label>
           <button
             type="button"
-            className="mt-2 rounded border border-[var(--nodra-border)] px-2 py-1 text-xs"
+            className="nodra-dialog-btn nodra-dialog-btn--ghost mt-2 px-2 py-1 text-xs"
             onClick={saveDisplayPath}
             disabled={!pathDraft.trim()}
           >
@@ -189,24 +167,24 @@ export function LogseqAssetsLink({ graphId, graphName }: Props) {
         </div>
       )}
 
-      {supported && (
+      {pickerSupported && (
         <div className="mt-4 flex flex-wrap items-center gap-2">
           {!linked && !needsPermission && (
             <button
               type="button"
               className="nodra-new-page-btn rounded-lg px-3 py-2 text-[13px] font-medium"
-              onClick={() => void onLink()}
+              onClick={() => void linkFolder()}
               disabled={busy}
             >
-              Link assets folder
+              {busy ? "Opening picker…" : "Link assets folder"}
             </button>
           )}
           {(linked || needsPermission) && (
             <>
               <button
                 type="button"
-                className="rounded-lg border border-[var(--nodra-border)] px-3 py-2 text-[13px] font-medium"
-                onClick={() => void onLink()}
+                className="nodra-dialog-btn nodra-dialog-btn--ghost px-3 py-2 text-[13px] font-medium"
+                onClick={() => void linkFolder()}
                 disabled={busy}
               >
                 Change folder
@@ -215,7 +193,7 @@ export function LogseqAssetsLink({ graphId, graphName }: Props) {
                 <button
                   type="button"
                   className="nodra-new-page-btn rounded-lg px-3 py-2 text-[13px] font-medium"
-                  onClick={() => void onReauthorize()}
+                  onClick={() => void reauthorize()}
                   disabled={busy}
                 >
                   Allow access
@@ -223,7 +201,7 @@ export function LogseqAssetsLink({ graphId, graphName }: Props) {
               )}
               <button
                 type="button"
-                className="rounded-lg px-3 py-2 text-[13px] text-[var(--nodra-muted)] hover:text-[var(--nodra-fg)]"
+                className="nodra-dialog-btn nodra-dialog-btn--ghost px-3 py-2 text-[13px] text-[var(--nodra-muted)]"
                 onClick={() => void onUnlink()}
                 disabled={busy}
               >
@@ -234,7 +212,7 @@ export function LogseqAssetsLink({ graphId, graphName }: Props) {
         </div>
       )}
 
-      {supported && needsPermission && (
+      {pickerSupported && needsPermission && (
         <p className="mt-2 text-xs text-[var(--nodra-muted)]">
           Access was revoked or expired. Click &quot;Allow access&quot; or choose
           the folder again.

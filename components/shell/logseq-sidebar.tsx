@@ -4,7 +4,6 @@ import Link from "next/link";
 import { ClientNavLink } from "./client-nav-link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  CalendarDays,
   GitBranch,
   Menu,
   Plus,
@@ -12,9 +11,9 @@ import {
   Settings,
   Users,
 } from "lucide-react";
-import { format } from "date-fns";
 import { useMemo, useState } from "react";
 import { GraphSwitcher, type GraphSummary } from "./graph-switcher";
+import { JournalSidebarSection } from "@/components/journal/journal-sidebar-section";
 
 export type SidebarPage = {
   id: string;
@@ -55,7 +54,6 @@ export function LogseqSidebar({
     return pages.filter((p) => p.name.toLowerCase().includes(q));
   }, [pages, search]);
 
-  const today = format(new Date(), "yyyy-MM-dd");
   const onGraph = pathname === "/graph";
   const onSettings = pathname === "/settings";
   const onUsers = pathname === "/users";
@@ -131,24 +129,7 @@ export function LogseqSidebar({
         </div>
 
         <div className="nodra-sidebar-scroll flex-1 overflow-y-auto px-2 pb-2">
-          <p className="nodra-sidebar-label px-2.5 pb-1">Journal</p>
-          <nav className="mb-1 space-y-0.5">
-            <ClientNavLink
-              href="/journal"
-              className={navClass(pathname === "/journal")}
-              onClick={onClose}
-            >
-              <CalendarDays size={16} className="shrink-0 opacity-80" />
-              All journals
-            </ClientNavLink>
-            <ClientNavLink
-              href={`/journal/${today}`}
-              className={`${navClass(pathname === `/journal/${today}`)} nodra-nav-nested`}
-              onClick={onClose}
-            >
-              Today
-            </ClientNavLink>
-          </nav>
+          <JournalSidebarSection onClose={onClose} navClass={navClass} />
 
           <p className="nodra-sidebar-label mt-3 px-2.5 pb-1">Explore</p>
           <nav className="mb-1 space-y-0.5">
