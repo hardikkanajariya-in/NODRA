@@ -910,9 +910,11 @@ textarea,
 .nodra-asset-upload-fill {
   display: block;
   height: 100%;
+  min-width: 0;
   background: var(--nodra-accent);
   border-radius: inherit;
-  transition: width 120ms linear;
+  transition: width 180ms ease-out;
+  will-change: width;
 }
 
 .nodra-asset-upload {

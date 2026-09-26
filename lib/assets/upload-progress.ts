@@ -4,8 +4,11 @@ const values = new Map<string, number>();
 const listeners = new Map<string, Set<Listener>>();
 
 export function publishUploadProgress(id: string, percent: number) {
-  values.set(id, percent);
-  listeners.get(id)?.forEach((fn) => fn(percent));
+  const clamped = Math.max(0, Math.min(100, Math.round(percent)));
+  const prev = values.get(id) ?? 0;
+  const next = Math.max(prev, clamped);
+  values.set(id, next);
+  listeners.get(id)?.forEach((fn) => fn(next));
 }
 
 export function readUploadProgress(id: string): number {

@@ -90,8 +90,17 @@ async function processPaste(
   if (hasClipboardImages && pool.ordered.length > 0 && !structured) {
     upload?.onUploadStart?.();
     try {
-      for (const file of pool.ordered) {
-        await uploadAndInsertImage(editor, file, pageId, upload, {
+      const total = pool.ordered.length;
+      for (let index = 0; index < total; index++) {
+        const file = pool.ordered[index]!;
+        await uploadAndInsertImage(editor, file, pageId, {
+          onUploadProgress: (percent) => {
+            const overall = Math.round(
+              ((index + percent / 100) / total) * 100,
+            );
+            upload?.onUploadProgress?.(overall);
+          },
+        }, {
           manageUploadLifecycle: false,
         });
       }
@@ -158,10 +167,8 @@ async function processPaste(
             uploadId: job.uploadId,
             onProgress: (percent) => {
               percents[index] = percent;
-              const avg = Math.round(
-                percents.reduce((sum, n) => sum + n, 0) / total,
-              );
-              upload?.onUploadProgress?.(avg);
+              const sum = percents.reduce((a, n) => a + n, 0);
+              upload?.onUploadProgress?.(Math.round(sum / total));
             },
           });
           if (data) {

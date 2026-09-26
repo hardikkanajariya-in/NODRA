@@ -20,6 +20,7 @@ type Ctx = {
   routeLoading: boolean;
   setRouteLoading: (v: boolean) => void;
   uploadActive: boolean;
+  uploadCount: number;
   uploadProgress: number | null;
   beginUpload: () => void;
   setUploadProgress: (percent: number) => void;
@@ -41,8 +42,10 @@ export function AppActivityProvider({ children }: { children: ReactNode }) {
   const [activePresence, setActivePresence] = useState<PresenceUser[]>([]);
 
   const beginUpload = useCallback(() => {
-    setUploadCount((c) => c + 1);
-    setUploadProgressState(0);
+    setUploadCount((c) => {
+      if (c === 0) setUploadProgressState(0);
+      return c + 1;
+    });
   }, []);
   const setUploadProgress = useCallback((percent: number) => {
     setUploadProgressState(Math.max(0, Math.min(100, percent)));
@@ -64,6 +67,7 @@ export function AppActivityProvider({ children }: { children: ReactNode }) {
       routeLoading,
       setRouteLoading,
       uploadActive: uploadCount > 0,
+      uploadCount,
       uploadProgress,
       beginUpload,
       setUploadProgress,

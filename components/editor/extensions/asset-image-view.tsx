@@ -72,7 +72,9 @@ export function AssetImageView({
   useEffect(() => {
     if (!uploading || !uploadId) return;
     setProgress(readUploadProgress(uploadId));
-    return subscribeUploadProgress(uploadId, setProgress);
+    return subscribeUploadProgress(uploadId, (percent) => {
+      setProgress((prev) => Math.max(prev, percent));
+    });
   }, [uploading, uploadId]);
 
   const setAlign = useCallback(
@@ -208,7 +210,9 @@ export function AssetImageView({
               />
             </div>
             <span className="nodra-asset-upload-label">
-              Uploading {progress}%
+              {progress >= 96 && progress < 100
+                ? "Processing…"
+                : `Uploading · ${progress}%`}
             </span>
           </div>
         )}
