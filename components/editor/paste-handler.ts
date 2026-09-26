@@ -28,6 +28,7 @@ export function handleLogseqPaste(
   editor: Editor,
   event: ClipboardEvent,
   pageId: string,
+  graphId: string,
   upload?: UploadHandlers,
 ): boolean {
   const clipboard = event.clipboardData;
@@ -51,7 +52,7 @@ export function handleLogseqPaste(
   if (!looksLogseq && !hasImageFile) return false;
 
   event.preventDefault();
-  void processPaste(editor, clipboard, pageId, upload, hasImageFile, text);
+  void processPaste(editor, clipboard, pageId, graphId, upload, hasImageFile, text);
   return true;
 }
 
@@ -69,6 +70,7 @@ async function processPaste(
   editor: Editor,
   clipboard: DataTransfer,
   pageId: string,
+  graphId: string,
   upload?: UploadHandlers,
   hasClipboardImages = false,
   plainText = "",
@@ -101,12 +103,16 @@ async function processPaste(
 
   let folderReady = false;
   try {
-    folderReady = (await ensureLogseqAssetPermission()) === "ready";
+    folderReady =
+      (await ensureLogseqAssetPermission(graphId)) === "ready";
   } catch {
     folderReady = false;
   }
 
-  const resolveLocal = folderReady ? resolveLocalAssetFile : undefined;
+  const resolveLocal = folderReady
+    ? (hint: string, url?: string) =>
+        resolveLocalAssetFile(graphId, hint, url)
+    : undefined;
   const pasteOptions = {
     resolveLocalFile: resolveLocal,
     clipboardText: clipboardSnapshot.text,

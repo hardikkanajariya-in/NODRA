@@ -19,6 +19,7 @@ import { LogseqListCollapse } from "./extensions/logseq-list-collapse";
 import { handleLogseqPaste, uploadFileToEditor } from "./paste-handler";
 import { pageSlugFromName } from "@/lib/utils/slug";
 import { useAppActivity } from "@/components/shell/app-activity-context";
+import { useActiveGraph } from "@/components/shell/active-graph-context";
 import { EditorFormatContextMenu } from "./editor-format-context-menu";
 import {
   DOCUMENT_UPDATED_EVENT,
@@ -37,6 +38,7 @@ export function LogseqEditor({
   variant = "page",
 }: Props) {
   const router = useRouter();
+  const { id: graphId } = useActiveGraph();
   const {
     saveStatus,
     setSaveStatus,
@@ -210,7 +212,7 @@ export function LogseqEditor({
         paste: (_view, event) => {
           const ed = editorRef.current;
           if (!ed) return false;
-          return handleLogseqPaste(ed, event, pageId, uploadHandlers);
+          return handleLogseqPaste(ed, event, pageId, graphId, uploadHandlers);
         },
         drop: (view, event) => {
           const ed = editorRef.current;

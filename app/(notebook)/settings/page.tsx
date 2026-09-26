@@ -1,9 +1,24 @@
 import { getSession } from "@/lib/auth/session";
+import { getActiveGraph } from "@/lib/graphs/service";
 import { LogseqAssetsLink } from "@/components/settings/logseq-assets-link";
 import { ChangePasswordForm } from "@/components/settings/change-password-form";
 
+export const dynamic = "force-dynamic";
+
 export default async function SettingsPage() {
   const session = await getSession();
+  let graphId = "";
+  let graphName = "Active graph";
+
+  if (session) {
+    try {
+      const graph = await getActiveGraph(session.userId);
+      graphId = graph.id;
+      graphName = graph.name;
+    } catch {
+      // no accessible graph
+    }
+  }
 
   return (
     <div className="nodra-content mx-auto max-w-2xl px-8 py-6">
@@ -16,7 +31,7 @@ export default async function SettingsPage() {
           </div>
         )}
         <ChangePasswordForm />
-        <LogseqAssetsLink />
+        <LogseqAssetsLink graphId={graphId} graphName={graphName} />
       </div>
     </div>
   );

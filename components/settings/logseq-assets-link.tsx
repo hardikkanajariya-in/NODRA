@@ -13,7 +13,12 @@ import {
   type LogseqAssetsFolderMeta,
 } from "@/lib/logseq/local-asset-folder";
 
-export function LogseqAssetsLink() {
+type Props = {
+  graphId: string;
+  graphName: string;
+};
+
+export function LogseqAssetsLink({ graphId, graphName }: Props) {
   const [status, setStatus] = useState<LogseqAssetFolderStatus>("not_linked");
   const [meta, setMeta] = useState<LogseqAssetsFolderMeta | null>(null);
   const [busy, setBusy] = useState(false);
@@ -22,23 +27,25 @@ export function LogseqAssetsLink() {
   const [pickerSupported, setPickerSupported] = useState<boolean | null>(null);
 
   useEffect(() => {
+    if (!graphId) return;
     void (async () => {
       const supported = isLogseqAssetPickerSupported();
       setPickerSupported(supported);
-      setMeta(readLogseqAssetsMeta());
-      setStatus(await getLogseqAssetFolderStatus());
+      setMeta(readLogseqAssetsMeta(graphId));
+      setStatus(await getLogseqAssetFolderStatus(graphId));
       if (!supported && (await isBraveBrowser())) {
         setBraveNeedsFlag(true);
       }
     })();
-  }, []);
+  }, [graphId]);
 
   async function onLink() {
+    if (!graphId) return;
     setBusy(true);
     try {
-      const next = await linkLogseqAssetsFolder();
+      const next = await linkLogseqAssetsFolder(graphId);
       setStatus(next);
-      setMeta(readLogseqAssetsMeta());
+      setMeta(readLogseqAssetsMeta(graphId));
     } catch {
       // Non-abort failures are rare; keep current UI state
     } finally {
@@ -47,9 +54,10 @@ export function LogseqAssetsLink() {
   }
 
   async function onReauthorize() {
+    if (!graphId) return;
     setBusy(true);
     try {
-      const next = await ensureLogseqAssetPermission();
+      const next = await ensureLogseqAssetPermission(graphId);
       setStatus(next);
     } finally {
       setBusy(false);
@@ -57,9 +65,10 @@ export function LogseqAssetsLink() {
   }
 
   async function onUnlink() {
+    if (!graphId) return;
     setBusy(true);
     try {
-      await unlinkLogseqAssetsFolder();
+      await unlinkLogseqAssetsFolder(graphId);
       setStatus("not_linked");
       setMeta(null);
     } finally {
@@ -70,6 +79,14 @@ export function LogseqAssetsLink() {
   const supported = pickerSupported === true;
   const linked = status === "ready";
   const needsPermission = status === "denied";
+
+  if (!graphId) {
+    return (
+      <p className="text-sm text-[var(--nodra-muted)]">
+        Open a graph to link its Logseq assets folder.
+      </p>
+    );
+  }
 
   return (
     <section
@@ -83,11 +100,13 @@ export function LogseqAssetsLink() {
         Logseq assets folder
       </h2>
       <p className="mt-2 text-sm text-[var(--nodra-muted)]">
+        For graph <span className="font-medium text-[var(--nodra-fg)]">{graphName}</span>.
         When you paste from Logseq Desktop, images are referenced by filename
-        but not copied into the clipboard. Link your graph&apos;s{" "}
-        <code className="text-[12px]">assets</code> folder so NODRA can read
-        those files locally (nothing is uploaded except through normal image
-        paste).
+        but not copied into the clipboard. Link this graph&apos;s{" "}
+        <code className="text-[12px]">assets</code> folder on{" "}
+        <strong>this device</strong> so NODRA can read those files locally
+        (nothing is uploaded except through normal image paste). Each graph has
+        its own link; other devices must link again.
       </p>
       <p className="mt-2 text-xs text-[var(--nodra-muted)]">
         Typical path:{" "}
@@ -130,7 +149,7 @@ export function LogseqAssetsLink() {
         <div className="mt-4 flex flex-wrap items-center gap-2">
           {linked && meta && (
             <span className="text-sm text-[var(--nodra-muted)]">
-              Linked:{" "}
+              Linked on this device:{" "}
               <span className="font-medium text-[var(--nodra-fg)]">
                 {meta.name}
               </span>

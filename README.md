@@ -55,7 +55,7 @@ Open [http://localhost:3000](http://localhost:3000), register an account, and si
 
 **Upgrading an existing notebook:** after deploy, remove `APP_PASSWORD` from the environment. Everyone must register again (old session cookies are invalid). The **first** account created on the instance becomes owner of all graphs that existed before multi-user auth—coordinate who registers first on private deployments.
 
-If you paste from Logseq Desktop and images appear as filenames only, open **Settings** in the sidebar and link your graph’s `assets` folder (for example `%USERPROFILE%\logseq\graphs\<graph>\assets` on Windows). Folder access stays in your browser; use Chrome, Edge, or another Chromium-based browser for this feature.
+If you paste from Logseq Desktop and images appear as filenames only, open **Settings** and link that graph’s `assets` folder on **this browser/device** (each graph has its own link; nothing is stored on the server). Folder access stays in your browser; use Chrome, Edge, or another Chromium-based browser for this feature.
 
 ### Environment variables
 

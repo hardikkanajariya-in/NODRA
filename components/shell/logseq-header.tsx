@@ -5,11 +5,13 @@ import { usePathname } from "next/navigation";
 import { useMemo } from "react";
 import { useTheme } from "./theme-provider";
 import { GlobalStatusBar } from "./global-status-bar";
+import { LogseqAssetsTopBarStatus } from "./logseq-assets-status";
 import { useAppActivity } from "./app-activity-context";
 
 type Props = {
   onMenuClick?: () => void;
   currentUsername?: string;
+  activeGraphId?: string;
 };
 
 function headerTitle(pathname: string): string {
@@ -28,7 +30,11 @@ function headerTitle(pathname: string): string {
   return "NODRA";
 }
 
-export function LogseqHeader({ onMenuClick, currentUsername = "" }: Props) {
+export function LogseqHeader({
+  onMenuClick,
+  currentUsername = "",
+  activeGraphId = "",
+}: Props) {
   const { theme, toggle } = useTheme();
   const { activePresence } = useAppActivity();
   const pathname = usePathname();
@@ -59,6 +65,7 @@ export function LogseqHeader({ onMenuClick, currentUsername = "" }: Props) {
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
+        <LogseqAssetsTopBarStatus graphId={activeGraphId} />
         {othersOnGraph.length > 0 && (
           <span
             className="nodra-active-users flex max-w-[12rem] items-center gap-1 truncate text-xs text-[var(--nodra-muted)] md:max-w-xs"

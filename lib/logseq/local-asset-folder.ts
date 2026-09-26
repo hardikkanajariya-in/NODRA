@@ -1,9 +1,11 @@
 const IDB_NAME = "nodra-fs";
 const IDB_STORE = "handles";
-const IDB_KEY = "logseq-assets-handle";
-const META_KEY = "nodra/logseq-assets-meta";
+const LEGACY_IDB_KEY = "logseq-assets-handle";
+const LEGACY_META_KEY = "nodra/logseq-assets-meta";
 
 const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "gif", "svg"];
+
+export const LOGSEQ_ASSETS_FOLDER_EVENT = "nodra:logseq-assets-folder";
 
 export type LogseqAssetFolderStatus =
   | "unavailable"
@@ -15,6 +17,21 @@ export type LogseqAssetsFolderMeta = {
   name: string;
   linkedAt: string;
 };
+
+function idbKeyForGraph(graphId: string): string {
+  return `logseq-assets-handle:${graphId}`;
+}
+
+function metaKeyForGraph(graphId: string): string {
+  return `nodra/logseq-assets-meta:${graphId}`;
+}
+
+function notifyAssetsFolderChanged(graphId: string) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent(LOGSEQ_ASSETS_FOLDER_EVENT, { detail: { graphId } }),
+  );
+}
 
 export function isLogseqAssetPickerSupported(): boolean {
   return (
@@ -37,10 +54,12 @@ export async function isBraveBrowser(): Promise<boolean> {
   }
 }
 
-export function readLogseqAssetsMeta(): LogseqAssetsFolderMeta | null {
-  if (typeof localStorage === "undefined") return null;
+export function readLogseqAssetsMeta(
+  graphId: string,
+): LogseqAssetsFolderMeta | null {
+  if (!graphId || typeof localStorage === "undefined") return null;
   try {
-    const raw = localStorage.getItem(META_KEY);
+    const raw = localStorage.getItem(metaKeyForGraph(graphId));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as LogseqAssetsFolderMeta;
     if (parsed?.name && parsed?.linkedAt) return parsed;
@@ -50,13 +69,17 @@ export function readLogseqAssetsMeta(): LogseqAssetsFolderMeta | null {
   return null;
 }
 
-function writeLogseqAssetsMeta(meta: LogseqAssetsFolderMeta | null) {
-  if (typeof localStorage === "undefined") return;
+function writeLogseqAssetsMeta(
+  graphId: string,
+  meta: LogseqAssetsFolderMeta | null,
+) {
+  if (!graphId || typeof localStorage === "undefined") return;
+  const key = metaKeyForGraph(graphId);
   if (!meta) {
-    localStorage.removeItem(META_KEY);
+    localStorage.removeItem(key);
     return;
   }
-  localStorage.setItem(META_KEY, JSON.stringify(meta));
+  localStorage.setItem(key, JSON.stringify(meta));
 }
 
 function openIdb(): Promise<IDBDatabase> {
@@ -73,12 +96,12 @@ function openIdb(): Promise<IDBDatabase> {
   });
 }
 
-async function idbGetHandle(): Promise<FileSystemDirectoryHandle | null> {
+async function idbGetRaw(key: string): Promise<FileSystemDirectoryHandle | null> {
   const db = await openIdb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(IDB_STORE, "readonly");
     const store = tx.objectStore(IDB_STORE);
-    const req = store.get(IDB_KEY);
+    const req = store.get(key);
     req.onsuccess = () => {
       const value = req.result;
       resolve(
@@ -91,12 +114,55 @@ async function idbGetHandle(): Promise<FileSystemDirectoryHandle | null> {
   });
 }
 
-async function idbSetHandle(handle: FileSystemDirectoryHandle | null): Promise<void> {
+async function idbDeleteRaw(key: string): Promise<void> {
   const db = await openIdb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(IDB_STORE, "readwrite");
     const store = tx.objectStore(IDB_STORE);
-    const req = handle ? store.put(handle, IDB_KEY) : store.delete(IDB_KEY);
+    const req = store.delete(key);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error ?? new Error("IndexedDB delete failed"));
+  });
+}
+
+async function migrateLegacyLinkIfNeeded(graphId: string): Promise<void> {
+  const existing = await idbGetRaw(idbKeyForGraph(graphId));
+  if (existing) return;
+
+  const legacyHandle = await idbGetRaw(LEGACY_IDB_KEY);
+  if (!legacyHandle) return;
+
+  await idbSetHandle(graphId, legacyHandle);
+  await idbDeleteRaw(LEGACY_IDB_KEY);
+
+  if (typeof localStorage !== "undefined") {
+    const legacyMetaRaw = localStorage.getItem(LEGACY_META_KEY);
+    if (legacyMetaRaw) {
+      localStorage.setItem(metaKeyForGraph(graphId), legacyMetaRaw);
+      localStorage.removeItem(LEGACY_META_KEY);
+    }
+  }
+}
+
+async function idbGetHandle(
+  graphId: string,
+): Promise<FileSystemDirectoryHandle | null> {
+  if (!graphId) return null;
+  await migrateLegacyLinkIfNeeded(graphId);
+  return idbGetRaw(idbKeyForGraph(graphId));
+}
+
+async function idbSetHandle(
+  graphId: string,
+  handle: FileSystemDirectoryHandle | null,
+): Promise<void> {
+  if (!graphId) return;
+  const db = await openIdb();
+  const key = idbKeyForGraph(graphId);
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, "readwrite");
+    const store = tx.objectStore(IDB_STORE);
+    const req = handle ? store.put(handle, key) : store.delete(key);
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error ?? new Error("IndexedDB write failed"));
   });
@@ -177,36 +243,50 @@ async function readFileFromDir(
   }
 }
 
-let cachedAssetsDir: FileSystemDirectoryHandle | null = null;
-let cachedRootKey: string | null = null;
+const cachedAssetsDir = new Map<
+  string,
+  { rootKey: string; dir: FileSystemDirectoryHandle }
+>();
 
-async function getLinkedAssetsDir(): Promise<FileSystemDirectoryHandle | null> {
-  const root = await idbGetHandle();
+function clearCacheForGraph(graphId: string) {
+  cachedAssetsDir.delete(graphId);
+}
+
+async function getLinkedAssetsDir(
+  graphId: string,
+): Promise<FileSystemDirectoryHandle | null> {
+  if (!graphId) return null;
+  const root = await idbGetHandle(graphId);
   if (!root) {
-    cachedAssetsDir = null;
-    cachedRootKey = null;
+    clearCacheForGraph(graphId);
     return null;
   }
   const key = root.name;
-  if (cachedAssetsDir && cachedRootKey === key) return cachedAssetsDir;
+  const cached = cachedAssetsDir.get(graphId);
+  if (cached && cached.rootKey === key) return cached.dir;
   const assets = await resolveAssetsDir(root);
-  cachedAssetsDir = assets;
-  cachedRootKey = key;
+  cachedAssetsDir.set(graphId, { rootKey: key, dir: assets });
   return assets;
 }
 
-export async function getLogseqAssetFolderStatus(): Promise<LogseqAssetFolderStatus> {
+export async function getLogseqAssetFolderStatus(
+  graphId: string,
+): Promise<LogseqAssetFolderStatus> {
+  if (!graphId) return "not_linked";
   if (!isLogseqAssetPickerSupported()) return "unavailable";
-  const handle = await idbGetHandle();
+  const handle = await idbGetHandle(graphId);
   if (!handle) return "not_linked";
   const perm = await handle.queryPermission({ mode: "read" });
   if (perm === "granted") return "ready";
   return "denied";
 }
 
-export async function ensureLogseqAssetPermission(): Promise<LogseqAssetFolderStatus> {
+export async function ensureLogseqAssetPermission(
+  graphId: string,
+): Promise<LogseqAssetFolderStatus> {
+  if (!graphId) return "not_linked";
   if (!isLogseqAssetPickerSupported()) return "unavailable";
-  const handle = await idbGetHandle();
+  const handle = await idbGetHandle(graphId);
   if (!handle) return "not_linked";
   let perm = await handle.queryPermission({ mode: "read" });
   if (perm === "prompt") {
@@ -215,43 +295,49 @@ export async function ensureLogseqAssetPermission(): Promise<LogseqAssetFolderSt
   return perm === "granted" ? "ready" : "denied";
 }
 
-export async function linkLogseqAssetsFolder(): Promise<LogseqAssetFolderStatus> {
+export async function linkLogseqAssetsFolder(
+  graphId: string,
+): Promise<LogseqAssetFolderStatus> {
+  if (!graphId) return "not_linked";
   if (!isLogseqAssetPickerSupported()) return "unavailable";
   let root: FileSystemDirectoryHandle;
   try {
     root = await window.showDirectoryPicker({ mode: "read" });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
-      return getLogseqAssetFolderStatus();
+      return getLogseqAssetFolderStatus(graphId);
     }
     throw error;
   }
-  await idbSetHandle(root);
-  cachedAssetsDir = null;
-  cachedRootKey = null;
-  writeLogseqAssetsMeta({
+  await idbSetHandle(graphId, root);
+  clearCacheForGraph(graphId);
+  writeLogseqAssetsMeta(graphId, {
     name: root.name,
     linkedAt: new Date().toISOString(),
   });
   const perm = await root.requestPermission({ mode: "read" });
-  return perm === "granted" ? "ready" : "denied";
+  const status = perm === "granted" ? "ready" : "denied";
+  notifyAssetsFolderChanged(graphId);
+  return status;
 }
 
-export async function unlinkLogseqAssetsFolder(): Promise<void> {
-  await idbSetHandle(null);
-  writeLogseqAssetsMeta(null);
-  cachedAssetsDir = null;
-  cachedRootKey = null;
+export async function unlinkLogseqAssetsFolder(graphId: string): Promise<void> {
+  if (!graphId) return;
+  await idbSetHandle(graphId, null);
+  writeLogseqAssetsMeta(graphId, null);
+  clearCacheForGraph(graphId);
+  notifyAssetsFolderChanged(graphId);
 }
 
 export async function resolveLocalAssetFile(
+  graphId: string,
   hint: string,
   url?: string,
 ): Promise<File | null> {
-  const status = await ensureLogseqAssetPermission();
+  const status = await ensureLogseqAssetPermission(graphId);
   if (status !== "ready") return null;
 
-  const dir = await getLinkedAssetsDir();
+  const dir = await getLinkedAssetsDir(graphId);
   if (!dir) return null;
 
   const candidates = collectAssetFileCandidates(hint, url);
@@ -260,4 +346,20 @@ export async function resolveLocalAssetFile(
     if (file) return file;
   }
   return null;
+}
+
+export function logseqAssetsStatusLabel(
+  status: LogseqAssetFolderStatus,
+  meta: LogseqAssetsFolderMeta | null,
+): string {
+  switch (status) {
+    case "ready":
+      return meta?.name ? `Assets: ${meta.name}` : "Assets linked";
+    case "denied":
+      return "Assets access needed";
+    case "not_linked":
+      return "No assets folder";
+    case "unavailable":
+      return "Assets linking unavailable";
+  }
 }
