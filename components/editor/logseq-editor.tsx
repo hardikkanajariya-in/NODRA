@@ -15,6 +15,7 @@ import { PropertyBlock } from "./extensions/property-block";
 import { AssetImage } from "./extensions/asset-image";
 import { LogseqListItem } from "./extensions/logseq-list-item";
 import { LogseqOutline } from "./extensions/logseq-outline";
+import { LogseqListCollapse } from "./extensions/logseq-list-collapse";
 import { handleLogseqPaste, uploadFileToEditor } from "./paste-handler";
 import { pageSlugFromName } from "@/lib/utils/slug";
 import { useAppActivity } from "@/components/shell/app-activity-context";
@@ -159,6 +160,9 @@ export function LogseqEditor({
         bulletList: { keepMarks: true, keepAttributes: true },
         orderedList: false,
         listItem: false,
+        heading: false,
+        blockquote: false,
+        trailingNode: false,
       }),
       LogseqListItem,
       TaskList.configure({
@@ -178,6 +182,7 @@ export function LogseqEditor({
       PropertyBlock,
       AssetImage,
       LogseqOutline,
+      LogseqListCollapse,
     ],
     content: documentContent,
     editorProps: {

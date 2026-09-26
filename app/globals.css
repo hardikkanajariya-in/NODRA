@@ -381,6 +381,54 @@ body {
   border-radius: 4px;
 }
 
+.nodra-editor-prose ul:not([data-type="taskList"]) > li:has(> ul) {
+  padding-left: 2.35rem;
+}
+
+.nodra-editor-prose li[data-collapsed="true"] > ul {
+  display: none;
+}
+
+.nodra-editor-prose .nodra-list-collapse {
+  position: absolute;
+  left: 0.2rem;
+  top: 0.42em;
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--nodra-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.nodra-editor-prose .nodra-list-collapse::before {
+  content: "";
+  display: block;
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 5px solid currentColor;
+  transition: transform 0.12s ease;
+  transform: rotate(90deg);
+}
+
+.nodra-editor-prose .nodra-list-collapse[data-collapsed="true"]::before {
+  transform: rotate(0deg);
+}
+
+.nodra-editor-prose .nodra-list-collapse:hover {
+  background: var(--nodra-block-hover);
+  color: var(--nodra-fg);
+}
+
 .nodra-editor-prose ul:not([data-type="taskList"]) > li:hover {
   background: var(--nodra-block-hover);
 }
