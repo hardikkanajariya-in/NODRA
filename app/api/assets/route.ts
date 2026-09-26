@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { assets } from "@/lib/db/schema";
+import { assets, pages } from "@/lib/db/schema";
 import { isR2Configured, uploadToR2 } from "@/lib/assets/r2";
+import { buildAssetStorageKey } from "@/lib/assets/storage-key";
 
 export async function POST(request: Request) {
   if (!isR2Configured()) {
@@ -20,10 +22,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid upload" }, { status: 400 });
   }
 
+  const page = await db.query.pages.findFirst({
+    where: eq(pages.id, pageId),
+    with: { graph: true },
+  });
+  if (!page?.graph) {
+    return NextResponse.json({ error: "Page not found" }, { status: 404 });
+  }
+
   const buffer = Buffer.from(await file.arrayBuffer());
   const ext = file.name.split(".").pop() ?? "bin";
   const id = randomUUID();
-  const storageKey = `assets/${id}.${ext}`;
+  const storageKey = buildAssetStorageKey(
+    page.graph.slug,
+    page,
+    `${id}.${ext}`,
+  );
 
   await uploadToR2(storageKey, buffer, file.type || "application/octet-stream");
 

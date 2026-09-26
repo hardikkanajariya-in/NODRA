@@ -2,90 +2,521 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NODRA — block notebook</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>NODRA — Self-Hosted Interconnected Block Notebook</title>
     <meta
       name="description"
-      content="Self-hosted block notebook with journals, pages, and a page graph. Logseq-friendly paste."
+      content="Self-hosted block notebook with daily journals, wiki-style connected pages, Logseq-compatible nested outliner, and visual knowledge graph."
     />
-    <link rel="stylesheet" href="/src/style.css" />
+    <link rel="icon" type="image/svg+xml" href="./assets/nodra-logo.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./src/style.css" />
   </head>
   <body>
-    <header class="site-header">
-      <div class="wrap header-inner">
-        <a class="brand" href="./">NODRA</a>
-        <nav>
-          <a href="#features">Features</a>
-          <a href="#self-host">Self-host</a>
-          <a href="https://github.com/hardikkanajariya-in/NODRA">GitHub</a>
-        </nav>
-      </div>
-    </header>
-
-    <main>
-      <section class="hero wrap">
-        <p class="eyebrow">Open source</p>
-        <h1>Your notes, blocks, and links — online and under your control.</h1>
-        <p class="lead">
-          NODRA is a block notebook for daily journals, connected pages, and a
-          visual graph. Paste from Logseq and keep writing in nested bullets,
-          page references, and properties.
-        </p>
-        <div class="cta-row">
-          <a class="btn primary" href="https://github.com/hardikkanajariya-in/NODRA"
-            >View on GitHub</a
-          >
-          <a class="btn" href="#self-host">Self-hosting guide</a>
+    <!-- Viewport-Locked Terminal Shell (Zero Window Scroll) -->
+    <div class="terminal-shell" id="app">
+      
+      <!-- Top Titlebar & Telemetry Header -->
+      <header class="terminal-titlebar">
+        <div class="titlebar-left">
+          <div class="traffic-lights">
+            <span class="light red" title="Close"></span>
+            <span class="light yellow" title="Minimize"></span>
+            <span class="light green" title="Maximize"></span>
+          </div>
+          <a class="brand-link" href="./" title="NODRA Home">
+            <img src="./assets/nodra-logo.svg" alt="NODRA Logo" class="brand-icon" />
+            <span class="brand-name">NODRA</span>
+          </a>
+          <span class="path-badge">nodra@kernel:~/workspace/graph</span>
         </div>
-      </section>
 
-      <section id="features" class="wrap features">
-        <h2>Built for how you already write</h2>
-        <div class="grid">
-          <article>
-            <h3>Journals</h3>
-            <p>One page per day. Open today, yesterday, or any date in the sidebar.</p>
-          </article>
-          <article>
-            <h3>Pages</h3>
-            <p>Wiki-style pages with <code>[[links]]</code> that build your graph as you save.</p>
-          </article>
-          <article>
-            <h3>Logseq paste</h3>
-            <p>Nested bullets, tags, and properties from Logseq Markdown land in the editor.</p>
-          </article>
-          <article>
-            <h3>Graph</h3>
-            <p>See how journals and pages connect. Click a node to open it.</p>
-          </article>
+        <div class="titlebar-center">
+          <div class="telemetry-pill">
+            <span class="status-indicator"></span>
+            <span class="telemetry-text">SYSTEM: ACTIVE</span>
+          </div>
+          <div class="telemetry-pill hide-compact">
+            <span class="telemetry-dim">DB:</span>
+            <span>POSTGRESQL (SYNCED)</span>
+          </div>
+          <div class="telemetry-pill hide-mobile">
+            <span class="telemetry-dim">OUTLINER:</span>
+            <span>LOGSEQ COMPATIBLE</span>
+          </div>
+          <div class="telemetry-pill hide-compact">
+            <span class="telemetry-dim">UPTIME:</span>
+            <span id="system-uptime">00:00</span>
+          </div>
         </div>
-      </section>
 
-      <section id="self-host" class="wrap self-host">
-        <h2>Self-hosting</h2>
-        <p>
-          NODRA runs as a Next.js app with PostgreSQL. You set a single access
-          password in the environment — no user database required.
-        </p>
-        <pre><code>git clone https://github.com/hardikkanajariya-in/NODRA.git
-cd NODRA
-pnpm install
-cp .env.example .env.local
-pnpm dev</code></pre>
-        <p>
-          Full details are in the
-          <a href="https://github.com/hardikkanajariya-in/NODRA#self-hosting"
-            >README</a
-          >.
-        </p>
-      </section>
-    </main>
+        <div class="titlebar-right">
+          <button class="action-btn" data-command="selfhost" title="Quick Self-Hosting Guide">
+            <span class="btn-icon">⚡</span>
+            <span>Deploy</span>
+          </button>
+          <a class="action-btn gh-btn" href="https://github.com/hardikkanajariya-in/NODRA" target="_blank" rel="noopener noreferrer">
+            <svg class="gh-svg" height="15" viewBox="0 0 16 16" width="15" fill="currentColor">
+              <path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path>
+            </svg>
+            <span>GitHub</span>
+          </a>
+        </div>
+      </header>
 
-    <footer class="site-footer">
-      <div class="wrap footer-inner">
-        <span>© 2026 Hardik Kanajariya</span>
-        <a href="https://github.com/hardikkanajariya-in/NODRA">hardikkanajariya-in/NODRA</a>
-      </div>
-    </footer>
+      <!-- Sub-Nav & Stage Viewport Switchers -->
+      <nav class="terminal-nav-strip">
+        <div class="mobile-pane-switcher">
+          <button class="mobile-pane-toggle active" data-pane="terminal">💻 Terminal</button>
+          <button class="mobile-pane-toggle" data-pane="stage">👁 Visual Stage</button>
+        </div>
+
+        <div class="stage-tabs-list">
+          <button class="stage-tab-btn active" data-view="graph">
+            <span class="tab-dot dot-cyan"></span>
+            <span class="tab-label">graph-network.svg</span>
+          </button>
+          <button class="stage-tab-btn" data-view="editor">
+            <span class="tab-dot dot-purple"></span>
+            <span class="tab-label">nested-outliner.md</span>
+          </button>
+          <button class="stage-tab-btn" data-view="architecture">
+            <span class="tab-dot dot-emerald"></span>
+            <span class="tab-label">architecture.arch</span>
+          </button>
+          <button class="stage-tab-btn" data-view="selfhost">
+            <span class="tab-dot dot-amber"></span>
+            <span class="tab-label">deploy-runbook.sh</span>
+          </button>
+          <button class="stage-tab-btn" data-view="brand">
+            <span class="tab-dot dot-pink"></span>
+            <span class="tab-label">brand-assets.spec</span>
+          </button>
+        </div>
+
+        <div class="quick-commands-bar hide-compact">
+          <span class="quick-label">Try:</span>
+          <button class="quick-pill" data-command="features">features</button>
+          <button class="quick-pill" data-command="graph">graph</button>
+          <button class="quick-pill" data-command="editor">editor</button>
+          <button class="quick-pill" data-command="selfhost">selfhost</button>
+          <button class="quick-pill" data-command="clear">clear</button>
+        </div>
+      </nav>
+
+      <!-- Main Workspace (Split Grid: Left CLI, Right Visual Stage) -->
+      <main class="terminal-workspace">
+        
+        <!-- Left Pane: Interactive Terminal CLI -->
+        <section class="term-pane term-pane-cli">
+          <div class="pane-header">
+            <div class="pane-title">
+              <span class="pane-bullet">▶</span>
+              <span>INTERACTIVE DEV SHELL</span>
+            </div>
+            <div class="pane-shortcuts">
+              <span class="shortcut-tag">Tab: autocomplete</span>
+              <span class="shortcut-tag">Ctrl+L: clear</span>
+            </div>
+          </div>
+
+          <!-- Terminal Output Scroll Container -->
+          <div class="terminal-scroll-area" id="terminal-output">
+            <!-- Dynamically populated by TerminalApp -->
+          </div>
+
+          <!-- Terminal Command Input Bar -->
+          <div class="terminal-input-bar">
+            <div class="prompt-symbol">
+              <span class="user-part">guest</span><span class="at-part">@</span><span class="host-part">nodra</span><span class="colon-part">:</span><span class="tilde-part">~</span><span class="dollar-part">$</span>
+            </div>
+            <input
+              type="text"
+              id="terminal-input"
+              class="terminal-input-field"
+              placeholder="Type command (e.g. 'features', 'graph', 'selfhost') or press Enter..."
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
+            />
+            <button class="term-submit-btn" data-command="help" title="Show Help">
+              <span>Enter ↵</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Right Pane: Interactive Visual Stage -->
+        <section class="term-pane term-pane-stage">
+          
+          <!-- View 1: Interactive Knowledge Graph Simulation -->
+          <div class="stage-view-panel active" data-view-id="graph">
+            <div class="panel-inner-header">
+              <div class="panel-tag-group">
+                <span class="badge-tag cyan">INTERACTIVE 2D GRAPH</span>
+                <span class="panel-caption">Drag nodes · Hover to inspect relationships</span>
+              </div>
+              <div class="graph-actions">
+                <button class="tiny-btn" id="btn-reset-graph" title="Reset layout across canvas">Reset</button>
+                <button class="tiny-btn" data-command="features">Capabilities</button>
+              </div>
+            </div>
+
+            <div class="canvas-wrapper">
+              <canvas id="graph-canvas"></canvas>
+              
+              <!-- Floating Node Inspector Overlay -->
+              <div class="graph-inspector-overlay" id="graph-inspector">
+                <!-- Injected on node hover -->
+              </div>
+
+              <!-- Graph Help Overlay -->
+              <div class="canvas-legend">
+                <div class="legend-item"><span class="legend-dot" style="background:#38bdf8"></span> Core Engine</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#10b981"></span> Journals</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#a78bfa"></span> Wiki Pages</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#f59e0b"></span> Nested Outliner</div>
+                <div class="legend-item"><span class="legend-dot" style="background:#3b82f6"></span> Neon DB</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- View 2: Live Nested Block Outliner (Logseq Style) -->
+          <div class="stage-view-panel" data-view-id="editor">
+            <div class="panel-inner-header">
+              <div class="panel-tag-group">
+                <span class="badge-tag purple">NESTED BLOCK ENGINE</span>
+                <span class="panel-caption">Logseq-style markdown bullets & page references</span>
+              </div>
+              <div class="editor-date-pill">
+                <span>journal/2026-09-26.md</span>
+              </div>
+            </div>
+
+            <div class="editor-simulation-container">
+              <!-- Outliner Blocks -->
+              <div class="block-tree">
+                
+                <!-- Root Block 1 -->
+                <div class="block-item">
+                  <div class="block-line">
+                    <button class="block-bullet-btn" title="Toggle collapse">▼</button>
+                    <span class="block-bullet-dot"></span>
+                    <div class="block-content">
+                      <span class="block-text">Today's journal entry & setup checklist</span>
+                      <span class="block-tag">#journal</span>
+                      <span class="block-tag">#release</span>
+                    </div>
+                  </div>
+
+                  <!-- Children of Root 1 -->
+                  <div class="block-children">
+                    <div class="block-item">
+                      <div class="block-line">
+                        <span class="block-bullet-dot static"></span>
+                        <div class="block-content">
+                          <span class="block-checkbox checked">✓</span>
+                          <span class="block-text strikethrough">Configure single-user authentication via <code>APP_PASSWORD</code></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="block-item">
+                      <div class="block-line">
+                        <button class="block-bullet-btn" title="Toggle collapse">▼</button>
+                        <span class="block-bullet-dot"></span>
+                        <div class="block-content">
+                          <span class="block-checkbox checked">✓</span>
+                          <span class="block-text">Paste markdown notes from <span class="block-wiki-link">[[Logseq Desktop]]</span></span>
+                        </div>
+                      </div>
+                      
+                      <!-- Grandchildren -->
+                      <div class="block-children">
+                        <div class="block-item">
+                          <div class="block-line">
+                            <span class="block-bullet-dot static"></span>
+                            <div class="block-content">
+                              <span class="block-text">Linked local asset folder: <code>%USERPROFILE%\logseq\graphs\personal\assets</code></span>
+                              <span class="prop-badge">status:: synced</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="block-item">
+                          <div class="block-line">
+                            <span class="block-bullet-dot static"></span>
+                            <div class="block-content">
+                              <span class="block-text">Nested bullets, tags, and block refs preserved with zero syntax loss</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="block-item">
+                      <div class="block-line">
+                        <span class="block-bullet-dot static"></span>
+                        <div class="block-content">
+                          <span class="block-checkbox">○</span>
+                          <span class="block-text">Explore connected concepts in the <span class="block-wiki-link">[[Knowledge Graph]]</span></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Root Block 2 -->
+                <div class="block-item">
+                  <div class="block-line">
+                    <button class="block-bullet-btn" title="Toggle collapse">▼</button>
+                    <span class="block-bullet-dot"></span>
+                    <div class="block-content">
+                      <span class="block-text">Architecture & schema sync mechanics</span>
+                      <span class="block-tag">#architecture</span>
+                    </div>
+                  </div>
+
+                  <div class="block-children">
+                    <div class="block-item">
+                      <div class="block-line">
+                        <span class="block-bullet-dot static"></span>
+                        <div class="block-content">
+                          <span class="block-text">PostgreSQL connection: <span class="prop-badge">driver:: drizzle-orm</span> <span class="prop-badge">host:: neon</span></span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="block-item">
+                      <div class="block-line">
+                        <span class="block-bullet-dot static"></span>
+                        <div class="block-content">
+                          <span class="block-text">Media storage: Pasted images upload directly to <span class="block-wiki-link">[[Cloudflare R2]]</span></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+              
+              <div class="editor-footer-hint">
+                <span>Tip: Click bullets (▼) to fold/unfold. Click checkboxes to toggle tasks. Click <code>[[links]]</code> to search graph.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- View 3: System Architecture -->
+          <div class="stage-view-panel" data-view-id="architecture">
+            <div class="panel-inner-header">
+              <div class="panel-tag-group">
+                <span class="badge-tag emerald">BLUEPRINT</span>
+                <span class="panel-caption">Clean, minimal self-hosted full-stack topology</span>
+              </div>
+              <button class="tiny-btn" data-command="selfhost">Deploy Guide</button>
+            </div>
+
+            <div class="architecture-container">
+              <div class="arch-visual-frame">
+                <img
+                  src="./assets/nodra_architecture_art.jpg"
+                  alt="NODRA Self-Hosted Architecture Schematic"
+                  class="arch-image"
+                  loading="lazy"
+                />
+              </div>
+
+              <div class="arch-grid">
+                <div class="arch-card">
+                  <div class="arch-card-header">
+                    <span class="arch-card-icon">⚡</span>
+                    <span class="arch-card-title">Next.js 15 App Router</span>
+                  </div>
+                  <p class="arch-card-body">Server components for fast, secure rendering. Minimal client hydration with zero tracking or telemetry bloat.</p>
+                </div>
+
+                <div class="arch-card">
+                  <div class="arch-card-header">
+                    <span class="arch-card-icon">🗄</span>
+                    <span class="arch-card-title">PostgreSQL & Drizzle ORM</span>
+                  </div>
+                  <p class="arch-card-body">Strict type safety, instant schema sync via <code>pnpm db:sync</code>, and support for serverless Neon or local PostgreSQL.</p>
+                </div>
+
+                <div class="arch-card">
+                  <div class="arch-card-header">
+                    <span class="arch-card-icon">☁</span>
+                    <span class="arch-card-title">Cloudflare R2 Storage</span>
+                  </div>
+                  <p class="arch-card-body">S3-compatible object storage with zero egress fees for seamless, permanent attachment and image pastes.</p>
+                </div>
+
+                <div class="arch-card">
+                  <div class="arch-card-header">
+                    <span class="arch-card-icon">📁</span>
+                    <span class="arch-card-title">Logseq Chromium Bridge</span>
+                  </div>
+                  <p class="arch-card-body">Direct Chromium File System Access to your local Logseq <code>assets/</code> folder without uploading your files to third parties.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- View 4: Self-Hosting Runbook -->
+          <div class="stage-view-panel" data-view-id="selfhost">
+            <div class="panel-inner-header">
+              <div class="panel-tag-group">
+                <span class="badge-tag amber">SELF-HOST RUNBOOK</span>
+                <span class="panel-caption">Single-user password protection · 2-minute setup</span>
+              </div>
+              <a class="tiny-btn" href="https://github.com/hardikkanajariya-in/NODRA#self-hosting" target="_blank" rel="noopener noreferrer">Full Docs ↗</a>
+            </div>
+
+            <div class="selfhost-container">
+              <div class="steps-flow">
+                
+                <div class="step-card">
+                  <div class="step-num">01</div>
+                  <div class="step-details">
+                    <div class="step-title">Clone Repository & Install Dependencies</div>
+                    <div class="code-copy-row">
+                      <code>git clone https://github.com/hardikkanajariya-in/NODRA.git &amp;&amp; cd NODRA &amp;&amp; pnpm install</code>
+                      <button class="copy-trigger" data-copy="git clone https://github.com/hardikkanajariya-in/NODRA.git && cd NODRA && pnpm install">Copy</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="step-card">
+                  <div class="step-num">02</div>
+                  <div class="step-details">
+                    <div class="step-title">Configure Environment Variables</div>
+                    <div class="code-copy-row">
+                      <code>cp .env.example .env.local</code>
+                      <button class="copy-trigger" data-copy="cp .env.example .env.local">Copy</button>
+                    </div>
+                    <div class="env-table-mini">
+                      <div class="env-row"><span class="env-key">DATABASE_URL</span><span class="env-desc">PostgreSQL connection string</span></div>
+                      <div class="env-row"><span class="env-key">APP_PASSWORD</span><span class="env-desc">Single-user master authentication key</span></div>
+                      <div class="env-row"><span class="env-key">SESSION_SECRET</span><span class="env-desc">Secret key for signing auth cookies</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="step-card">
+                  <div class="step-num">03</div>
+                  <div class="step-details">
+                    <div class="step-title">Start Development or Compile for Production</div>
+                    <div class="code-copy-row">
+                      <code>pnpm dev</code>
+                      <button class="copy-trigger" data-copy="pnpm dev">Copy Dev</button>
+                    </div>
+                    <div class="code-copy-row" style="margin-top: 6px;">
+                      <code>pnpm build &amp;&amp; pnpm start</code>
+                      <button class="copy-trigger" data-copy="pnpm build && pnpm start">Copy Prod</button>
+                    </div>
+                    <p class="step-subtext">The database schema applies automatically on boot via <code>scripts/apply-schema.mjs</code>.</p>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- View 5: Brand Identity & Visual Showcase -->
+          <div class="stage-view-panel" data-view-id="brand">
+            <div class="panel-inner-header">
+              <div class="panel-tag-group">
+                <span class="badge-tag pink">BRAND SPEC & SHOWCASE</span>
+                <span class="panel-caption">Visual identity, knowledge network emblem, and design philosophy</span>
+              </div>
+              <a class="tiny-btn" href="https://github.com/hardikkanajariya-in/NODRA" target="_blank" rel="noopener noreferrer">Source Repo</a>
+            </div>
+
+            <div class="brand-gallery-container">
+              <div class="brand-split">
+                
+                <!-- Brand Emblem Showcase -->
+                <div class="brand-card">
+                  <div class="brand-img-wrap">
+                    <img
+                      src="./assets/nodra_brand_logo.jpg"
+                      alt="NODRA Branded Logo Emblem"
+                      class="brand-preview-img"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div class="brand-card-content">
+                    <h3 class="brand-heading">The Interconnected 'N' Emblem</h3>
+                    <p class="brand-copy">
+                      NODRA's brandmark represents interconnected knowledge nodes converging into the letter 'N'. It symbolizes non-linear thinking: daily journal thoughts linking seamlessly into a living visual brain.
+                    </p>
+                    <div class="palette-bar">
+                      <span class="color-swatch" style="background:#0a0d14;" title="#0a0d14 Deep Obsidian"></span>
+                      <span class="color-swatch" style="background:#38bdf8;" title="#38bdf8 Cyan Glow"></span>
+                      <span class="color-swatch" style="background:#3b82f6;" title="#3b82f6 Cobalt Blue"></span>
+                      <span class="color-swatch" style="background:#10b981;" title="#10b981 Emerald Node"></span>
+                      <span class="color-swatch" style="background:#a78bfa;" title="#a78bfa Wiki Violet"></span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Graph Showcase UI Visual -->
+                <div class="brand-card">
+                  <div class="brand-img-wrap">
+                    <img
+                      src="./assets/nodra_graph_showcase.jpg"
+                      alt="NODRA Knowledge Graph and Block UI"
+                      class="brand-preview-img"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div class="brand-card-content">
+                    <h3 class="brand-heading">Terminal + Graph Interface</h3>
+                    <p class="brand-copy">
+                      Crafted for developers and thinkers who want the speed of an outliner, the bidirectional power of Logseq, and the autonomy of their own self-hosted server.
+                    </p>
+                    <div class="brand-actions-row">
+                      <button class="action-btn" data-command="features">Explore Features</button>
+                      <button class="action-btn" data-command="selfhost">Self-Host Now</button>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+      </main>
+
+      <!-- Bottom Dev Statusline (Vim/Tmux Style) -->
+      <footer class="terminal-statusbar">
+        <div class="status-left">
+          <span class="status-mode">NORMAL</span>
+          <span class="status-item hide-mobile">master*</span>
+          <span class="status-item hide-compact">Next.js 15</span>
+          <span class="status-item hide-compact">Neon PostgreSQL</span>
+        </div>
+
+        <div class="status-center">
+          <span class="status-item">NODRA: Block Notebook &amp; Graph</span>
+          <span class="status-muted hide-mobile">· [Ctrl+K] Focus CLI · [Ctrl+L] Clear</span>
+        </div>
+
+        <div class="status-right">
+          <span class="status-item">UTF-8</span>
+          <span class="status-item hide-compact">TypeScript</span>
+          <span class="status-item status-link">
+            <a href="https://github.com/hardikkanajariya-in/NODRA/blob/master/LICENSE" target="_blank" rel="noopener noreferrer">MIT</a>
+          </span>
+          <span class="status-indicator-green">●</span>
+        </div>
+      </footer>
+
+    </div>
+
+    <!-- Application Script -->
+    <script type="module" src="./src/main.ts"></script>
   </body>
 </html>
